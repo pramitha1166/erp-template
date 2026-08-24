@@ -6,7 +6,7 @@ on:
       - "infra/**"
       - ".github/workflows/terraform.yml"
   push:
-    branches: [main]
+    branches: [claude/srs-review-breakdown-49ecvy]
     paths:
       - "infra/**"
       - ".github/workflows/terraform.yml"
@@ -56,12 +56,13 @@ jobs:
 
       - run: terraform plan -no-color -input=false
 
-  # Runs only on merge to main, and only after anyone required by the
-  # "staging" GitHub Environment approves — see infra/README.md for setting
-  # that up. This role can create/modify/destroy most of the AWS footprint,
-  # so it is deliberately never available on a PR.
+  # Runs only on merge to claude/srs-review-breakdown-49ecvy (the repo's
+  # integration branch — there is no `main`), and only after anyone required
+  # by the "staging" GitHub Environment approves — see infra/README.md for
+  # setting that up. This role can create/modify/destroy most of the AWS
+  # footprint, so it is deliberately never available on a PR.
   apply:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/claude/srs-review-breakdown-49ecvy'
     name: terraform apply (staging)
     runs-on: ubuntu-latest
     environment: staging
