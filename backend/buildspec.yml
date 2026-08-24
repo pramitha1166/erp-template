@@ -1,8 +1,11 @@
 version: 0.2
 
-# Runs inside AWS CodeBuild (infra/modules/codebuild), triggered by
-# .github/workflows/deploy.yml after CI passes on main. Not used locally —
-# see backend/Dockerfile for that.
+# Runs inside AWS CodeBuild, invoked as a Build action by the CodePipeline
+# defined in infra/modules/codepipeline (Source: this GitHub repo, via a
+# CodeStar connection). CodePipeline hands the project a checkout of the
+# whole repo, so all commands below operate relative to the repo root
+# until the explicit `cd backend`. Not used locally — see backend/Dockerfile
+# for that.
 
 phases:
   pre_build:
@@ -11,12 +14,13 @@ phases:
       - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
   build:
     commands:
-      - echo "Building backend image $ECR_REGISTRY/$IMAGE_REPO_NAME:$IMAGE_TAG..."
-      - docker build -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:$IMAGE_TAG" -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:staging" .
+      - cd backend
+      - echo "Building backend image $ECR_REGISTRY/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION..."
+      - docker build -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION" -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:staging" .
   post_build:
     commands:
       - echo "Pushing images..."
-      - docker push "$ECR_REGISTRY/$IMAGE_REPO_NAME:$IMAGE_TAG"
+      - docker push "$ECR_REGISTRY/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION"
       - docker push "$ECR_REGISTRY/$IMAGE_REPO_NAME:staging"
       - echo "Rolling ECS deployment..."
       - aws ecs update-service --cluster "$CLUSTER_NAME" --service "$SERVICE_NAME" --force-new-deployment

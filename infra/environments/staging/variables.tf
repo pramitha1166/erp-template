@@ -13,6 +13,21 @@ variable "environment" {
   default = "staging"
 }
 
+variable "github_repo" {
+  description = "GitHub repository the pipeline sources from, as \"owner/repo\"."
+  type        = string
+  default     = "pramitha1166/erp-template"
+}
+
+variable "branch_name" {
+  description = "Branch the pipeline builds from and deploys on every push to."
+  type        = string
+  # This repo has no "main" — claude/srs-review-breakdown-49ecvy is the
+  # actual integration branch PRs merge into. Matches the branch filters in
+  # .github/workflows/ci.yml and terraform.yml.
+  default = "claude/srs-review-breakdown-49ecvy"
+}
+
 variable "certificate_arn" {
   description = "ACM certificate ARN for HTTPS on the ALB. Leave empty until a custom domain exists (BRD-4) — the environment serves plain HTTP on the ALB's own DNS name until then."
   type        = string

@@ -27,11 +27,19 @@ output "attachments_bucket_name" {
   value = module.storage.bucket_name
 }
 
-output "codebuild_source_bucket" {
-  description = "Where .github/workflows/deploy.yml uploads source zips before triggering a build."
-  value       = module.codebuild.source_bucket
-}
-
 output "codebuild_project_names" {
   value = module.codebuild.project_names
+}
+
+output "codepipeline_connection_arn" {
+  description = "GitHub connection ARN — starts PENDING. Authorize it once in the AWS Console (Developer Tools > Connections) after apply; see infra/README.md."
+  value       = module.codepipeline.connection_arn
+}
+
+output "codepipeline_connection_status" {
+  value = module.codepipeline.connection_status
+}
+
+output "codepipeline_name" {
+  value = module.codepipeline.pipeline_name
 }

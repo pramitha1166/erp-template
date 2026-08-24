@@ -6,47 +6,6 @@ locals {
 data "aws_caller_identity" "current" {}
 
 # ---------------------------------------------------------------------------
-# Source zips, uploaded by the thin GitHub Actions trigger step and read by
-# CodeBuild via a per-build sourceLocationOverride. Short-lived — a build
-# consumes its zip within minutes of upload.
-# ---------------------------------------------------------------------------
-
-resource "aws_s3_bucket" "source" {
-  bucket = "${local.name}-build-source"
-  tags   = local.common_tags
-}
-
-resource "aws_s3_bucket_public_access_block" "source" {
-  bucket                  = aws_s3_bucket.source.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "source" {
-  bucket = aws_s3_bucket.source.id
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "aws:kms"
-    }
-    bucket_key_enabled = true
-  }
-}
-
-resource "aws_s3_bucket_lifecycle_configuration" "source" {
-  bucket = aws_s3_bucket.source.id
-  rule {
-    id     = "expire-old-source-zips"
-    status = "Enabled"
-    filter {}
-    expiration {
-      days = var.source_zip_retention_days
-    }
-  }
-}
-
-# ---------------------------------------------------------------------------
 # CodeBuild service role — one role shared by both projects, permissions
 # scoped per-app via resource ARNs.
 # ---------------------------------------------------------------------------
@@ -105,13 +64,6 @@ data "aws_iam_policy_document" "codebuild" {
   }
 
   statement {
-    sid       = "ReadSourceZips"
-    effect    = "Allow"
-    actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.source.arn}/*"]
-  }
-
-  statement {
     sid    = "Logs"
     effect = "Allow"
     actions = [
@@ -130,9 +82,11 @@ resource "aws_iam_role_policy" "codebuild" {
 }
 
 # ---------------------------------------------------------------------------
-# One CodeBuild project per app. `source` is a placeholder — every real
-# build overrides it via `start-build --source-location-override` (see
-# .github/workflows/deploy.yml), so the value here is never actually built.
+# One CodeBuild project per app, invoked as a Build action inside the
+# CodePipeline defined in infra/modules/codepipeline — never started
+# directly. Source type CODEPIPELINE means CodePipeline hands the project
+# the whole repo checkout on every build; each project's buildspec path
+# picks out just its own app's buildspec.yml.
 # ---------------------------------------------------------------------------
 
 resource "aws_cloudwatch_log_group" "codebuild" {
@@ -151,8 +105,12 @@ resource "aws_codebuild_project" "this" {
   # 20 minutes covers `mvn package` / `npm ci && next build` comfortably.
   build_timeout = 20
 
+  # Must be CODEPIPELINE (matching source.type below) whenever this project
+  # is invoked as a CodePipeline Build action — the pipeline requires it
+  # even though the buildspec doesn't produce meaningful output files (the
+  # deploy happens inline, in post_build).
   artifacts {
-    type = "NO_ARTIFACTS"
+    type = "CODEPIPELINE"
   }
 
   environment {
@@ -182,19 +140,11 @@ resource "aws_codebuild_project" "this" {
       name  = "SERVICE_NAME"
       value = each.value.ecs_service_name
     }
-    environment_variable {
-      # Real value always comes from an environmentVariablesOverride at
-      # start-build time (the deploying commit's SHA); this default only
-      # matters if someone starts a build from the console without one.
-      name  = "IMAGE_TAG"
-      value = "manual"
-    }
   }
 
   source {
-    type      = "S3"
-    location  = "${aws_s3_bucket.source.bucket}/unused-placeholder.zip"
-    buildspec = "buildspec.yml"
+    type      = "CODEPIPELINE"
+    buildspec = "${each.key}/buildspec.yml"
   }
 
   logs_config {

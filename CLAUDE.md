@@ -114,10 +114,15 @@ opened is yours to fix before asking for review.
 ### Infrastructure & deployment (AWS)
 
 `infra/` — Terraform for the `staging` AWS environment (ECS Fargate, RDS,
-ElastiCache, ALB, S3, ECR), plus `.github/workflows/terraform.yml` (plan on
-PR, apply on merge to `claude/srs-review-breakdown-49ecvy`, gated by the
-`staging` GitHub Environment) and `.github/workflows/deploy.yml`
-(build/push images, roll the ECS deployment, after CI passes on
-`claude/srs-review-breakdown-49ecvy`). All AWS auth is via GitHub OIDC —
-no access keys anywhere. See `infra/README.md` for the one-time bootstrap
-and day-2 operations (custom domain, rollback, scaling toward production).
+ElastiCache, ALB, S3, ECR). Two separate pipelines, deliberately not one:
+`.github/workflows/terraform.yml` plans/applies *infrastructure* changes
+(gated by the `staging` GitHub Environment, authenticated via GitHub
+OIDC — no AWS access keys anywhere; runs on merge to
+`claude/srs-review-breakdown-49ecvy`, the repo's integration branch — there
+is currently no `main`), while an **AWS CodePipeline**
+(`infra/modules/codepipeline`, Terraform-managed) builds and deploys the
+*application* directly from GitHub via a CodeStar connection — no GitHub
+Actions involvement in builds or deploys at all. See `infra/README.md` for
+the one-time bootstrap, the one manual step (authorizing the GitHub
+connection), and day-2 operations (custom domain, rollback, scaling toward
+production).

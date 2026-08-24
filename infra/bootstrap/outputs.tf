@@ -12,8 +12,3 @@ output "terraform_apply_role_arn" {
   description = "Set as the AWS_ROLE_ARN input for the terraform-apply job, scoped to the \"staging\" GitHub Environment."
   value       = aws_iam_role.terraform_apply.arn
 }
-
-output "app_deploy_role_arn" {
-  description = "Set as the AWS_ROLE_ARN input for the build/push/deploy job, scoped to the \"staging\" GitHub Environment."
-  value       = aws_iam_role.app_deploy.arn
-}
