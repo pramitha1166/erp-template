@@ -12,3 +12,12 @@ backend/target/
 # Local env overrides
 .env
 .env.local
+
+# Terraform (.terraform.lock.hcl is intentionally NOT ignored — commit it,
+# same as a package-lock.json, for reproducible provider versions)
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+infra/environments/*/backend.hcl
+

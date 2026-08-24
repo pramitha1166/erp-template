@@ -289,7 +289,7 @@
                   <goal>generate</goal>
                 </goals>
                 <configuration>
-                  <apiDocsUrl>http://localhost:8080/v3/api-docs.yaml</apiDocsUrl>
+                  <apiDocsUrl>http://localhost:8080/api/v3/api-docs.yaml</apiDocsUrl>
                   <outputFileName>openapi.yaml</outputFileName>
                   <outputDir>${project.build.directory}</outputDir>
                 </configuration>

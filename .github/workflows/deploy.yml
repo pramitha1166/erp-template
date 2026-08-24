@@ -1,0 +1,65 @@
+name: Deploy
+
+# Fires after CI goes green on main — never builds/deploys an image that
+# hasn't passed backend+frontend CI first.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  id-token: write # required for AWS OIDC federation — no long-lived keys
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    name: Build, push, roll ECS deployment (staging)
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      CLUSTER: eudext-erp-staging
+      BACKEND_SERVICE: eudext-erp-staging-backend
+      FRONTEND_SERVICE: eudext-erp-staging-frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.APP_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+
+      - name: Build and push backend image
+        env:
+          REPO: ${{ steps.ecr-login.outputs.registry }}/eudext-erp-backend
+        run: |
+          docker build -t "$REPO:$SHA" -t "$REPO:staging" backend
+          docker push "$REPO:$SHA"
+          docker push "$REPO:staging"
+
+      - name: Build and push frontend image
+        env:
+          REPO: ${{ steps.ecr-login.outputs.registry }}/eudext-erp-frontend
+        run: |
+          docker build -t "$REPO:$SHA" -t "$REPO:staging" frontend
+          docker push "$REPO:$SHA"
+          docker push "$REPO:staging"
+
+      # Task definitions are Terraform-owned and pin to a floating ":staging"
+      # tag (see infra/modules/ecs) — no new task-def revision is registered
+      # here, just a forced redeploy that re-pulls the tag just pushed.
+      - name: Roll ECS deployment
+        run: |
+          aws ecs update-service --cluster "$CLUSTER" --service "$BACKEND_SERVICE" --force-new-deployment
+          aws ecs update-service --cluster "$CLUSTER" --service "$FRONTEND_SERVICE" --force-new-deployment
+
+      - name: Wait for services to stabilize
+        run: |
+          aws ecs wait services-stable --cluster "$CLUSTER" --services "$BACKEND_SERVICE" "$FRONTEND_SERVICE"

@@ -25,6 +25,11 @@ spring:
 
 server:
   port: 8080
+  servlet:
+    # All routes behind /api — lets the ALB path-route "/api/*" to this
+    # service and everything else to the frontend on the same listener
+    # (infra/modules/alb).
+    context-path: /api
 
 management:
   endpoints:

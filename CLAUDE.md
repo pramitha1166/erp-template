@@ -109,3 +109,13 @@ never work around them "for now":
 `.github/workflows/ci.yml` runs the `backend` and `frontend` jobs above on
 every push/PR to `main`. A red run on a PR you opened is yours to fix
 before asking for review.
+
+### Infrastructure & deployment (AWS)
+
+`infra/` — Terraform for the `staging` AWS environment (ECS Fargate, RDS,
+ElastiCache, ALB, S3, ECR), plus `.github/workflows/terraform.yml` (plan on
+PR, apply on merge to `main`, gated by the `staging` GitHub Environment)
+and `.github/workflows/deploy.yml` (build/push images, roll the ECS
+deployment, after CI passes on `main`). All AWS auth is via GitHub OIDC —
+no access keys anywhere. See `infra/README.md` for the one-time bootstrap
+and day-2 operations (custom domain, rollback, scaling toward production).
