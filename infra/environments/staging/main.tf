@@ -108,3 +108,17 @@ module "codebuild" {
     }
   }
 }
+
+module "codepipeline" {
+  source = "../../modules/codepipeline"
+
+  project     = var.project
+  environment = var.environment
+  aws_region  = var.aws_region
+  github_repo = var.github_repo
+  branch_name = var.branch_name
+
+  codebuild_project_names     = module.codebuild.project_names
+  codebuild_project_arns      = module.codebuild.project_arns
+  codebuild_service_role_name = module.codebuild.service_role_name
+}
