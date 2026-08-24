@@ -1,0 +1,12 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none # ARCH-7 — no exceptions inside the container either
+  datasource:
+    url: jdbc:postgresql://postgres:5432/eudext_erp
+    username: eudext
+    password: eudext
+  data:
+    redis:
+      host: redis
+      port: 6379
