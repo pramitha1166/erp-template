@@ -86,3 +86,25 @@ module "ecs" {
   attachments_bucket_name = module.storage.bucket_name
   attachments_bucket_arn  = module.storage.bucket_arn
 }
+
+module "codebuild" {
+  source = "../../modules/codebuild"
+
+  project          = var.project
+  environment      = var.environment
+  aws_region       = var.aws_region
+  ecs_cluster_name = module.ecs.cluster_name
+
+  apps = {
+    backend = {
+      ecr_repository_url = module.ecr.repository_urls["backend"]
+      ecr_repository_arn = module.ecr.repository_arns["backend"]
+      ecs_service_name   = module.ecs.backend_service_name
+    }
+    frontend = {
+      ecr_repository_url = module.ecr.repository_urls["frontend"]
+      ecr_repository_arn = module.ecr.repository_arns["frontend"]
+      ecs_service_name   = module.ecs.frontend_service_name
+    }
+  }
+}
