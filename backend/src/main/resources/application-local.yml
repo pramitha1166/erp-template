@@ -1,0 +1,12 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none # ARCH-7 — no exceptions for local dev either
+  datasource:
+    url: jdbc:postgresql://localhost:5432/eudext_erp
+    username: eudext
+    password: eudext
+
+logging:
+  level:
+    com.eudext.erp: DEBUG

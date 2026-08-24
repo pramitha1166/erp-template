@@ -1,0 +1,6 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none # ARCH-7 — enforced in tests too; schema comes from Flyway
+  flyway:
+    enabled: true

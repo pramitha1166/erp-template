@@ -1,0 +1,14 @@
+# Backend (Maven)
+backend/target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+
+# Local env overrides
+.env
+.env.local

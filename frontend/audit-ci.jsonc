@@ -1,0 +1,26 @@
+{
+  // NFR-S3: fail CI on any high-severity dependency CVE, with a narrow,
+  // named exception list rather than a blanket severity downgrade.
+  //
+  // Allowlisted: GHSA-qx2v-qp2m-jg93, GHSA-6g55-p6wh-862q,
+  // GHSA-fxqj-rqcc-2cmp, GHSA-r28c-9q8g-f849 — all in the copy of `postcss`
+  // bundled *inside* next@15.5.23's own node_modules (not a dependency we
+  // choose or can bump independently). No patched 15.x release exists as of
+  // this writing; the fix requires Next.js 16, which is out of scope for
+  // the "Next.js 15" pin in docs/SRS.md §6.2. Revisit this allowlist the
+  // next time the frontend's Next.js version changes.
+  //
+  // (sharp's equivalent CVE, GHSA-f88m-g3jw-g9cj, is fixed directly via the
+  // "overrides" entry in package.json instead of an allowlist entry here.)
+  "high": true,
+  "moderate": false,
+  "low": false,
+  "allowlist": [
+    "GHSA-qx2v-qp2m-jg93",
+    "GHSA-6g55-p6wh-862q",
+    "GHSA-fxqj-rqcc-2cmp",
+    "GHSA-r28c-9q8g-f849"
+  ],
+  "show-not-found": true,
+  "report-type": "important"
+}

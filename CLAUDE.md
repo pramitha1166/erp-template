@@ -71,6 +71,41 @@ never work around them "for now":
 
 ## Commands
 
-To be filled in once Epic 0.0 (repository & CI/CD bootstrap) lands — that
-PR should update this section with the actual build/test/lint commands for
-`backend/` and `frontend/`.
+### Backend (`backend/`, Maven)
+
+- `mvn compile` — compile only.
+- `mvn test` — unit tests, ArchUnit module-boundary rules (ARCH-1), the
+  ARCH-5 double/float ban, and Spring Modulith verification. No Docker
+  required.
+- `mvn verify` — everything in `test` plus Testcontainers integration tests
+  (`*IT.java`, NFR-M2) and the statutory-package JaCoCo coverage gate
+  (100% branch coverage, SRS §4.6 — a hard CI gate). Requires Docker.
+- `mvn -Popenapi verify -DskipTests` — boots the app against a real
+  Postgres and writes `target/openapi.yaml` (NFR-M4). Needs
+  `DB_URL`/`DB_USERNAME`/`DB_PASSWORD` pointing at a reachable Postgres
+  (see `docker-compose.yml` or the `backend` CI job).
+- `mvn org.owasp:dependency-check-maven:13.0.0:check -DfailBuildOnCVSS=7
+  -DnvdApiKey=$NVD_API_KEY` — dependency CVE scan (NFR-S3). Add an
+  `NVD_API_KEY` repository secret to activate this in CI (see
+  `.github/workflows/ci.yml`); without it the CI step is skipped rather
+  than silently passing.
+
+### Frontend (`frontend/`, npm)
+
+- `npm run dev` — local dev server.
+- `npm run lint` — ESLint.
+- `npm run typecheck` — `tsc --noEmit`.
+- `npm run build` — production build.
+- `npm run audit:ci` — dependency CVE scan (NFR-S3), gated by
+  `audit-ci.jsonc`'s documented allowlist.
+
+### Local stack
+
+- `docker compose up` — Postgres 16, Redis, MinIO, backend, frontend
+  (NFR-D1).
+
+### CI
+
+`.github/workflows/ci.yml` runs the `backend` and `frontend` jobs above on
+every push/PR to `main`. A red run on a PR you opened is yours to fix
+before asking for review.
