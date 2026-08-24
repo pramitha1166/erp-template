@@ -233,8 +233,12 @@ resource "aws_iam_role_policy" "terraform_apply" {
 }
 
 # ---------------------------------------------------------------------------
-# Role 3: build/push image + roll the ECS deployment. Narrower than the
-# Terraform role — no IAM, VPC, or database permissions at all.
+# Role 3: upload a source zip and trigger the AWS-side build. Deliberately
+# minimal — no ECR, ECS, IAM, VPC, or database permissions at all. The
+# actual image build/push/deploy runs inside AWS CodeBuild
+# (infra/modules/codebuild), under its own service role, so GitHub Actions
+# never needs those permissions and barely spends any of its own compute
+# minutes on a deploy — see .github/workflows/deploy.yml.
 # ---------------------------------------------------------------------------
 
 resource "aws_iam_role" "app_deploy" {
@@ -244,40 +248,20 @@ resource "aws_iam_role" "app_deploy" {
 
 data "aws_iam_policy_document" "app_deploy" {
   statement {
-    sid       = "EcrAuth"
+    sid       = "UploadBuildSource"
     effect    = "Allow"
-    actions   = ["ecr:GetAuthorizationToken"]
-    resources = ["*"]
+    actions   = ["s3:PutObject"]
+    resources = ["arn:aws:s3:::${var.project}-*-build-source/*"]
   }
 
   statement {
-    sid    = "EcrPush"
+    sid    = "TriggerAndPollCodeBuild"
     effect = "Allow"
     actions = [
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:GetDownloadUrlForLayer",
-      "ecr:InitiateLayerUpload",
-      "ecr:UploadLayerPart",
-      "ecr:CompleteLayerUpload",
-      "ecr:PutImage",
-      "ecr:BatchGetImage",
-      "ecr:DescribeRepositories",
-      "ecr:DescribeImages",
+      "codebuild:StartBuild",
+      "codebuild:BatchGetBuilds",
     ]
-    resources = ["arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/${var.project}-*"]
-  }
-
-  statement {
-    sid    = "EcsDeploy"
-    effect = "Allow"
-    actions = [
-      "ecs:DescribeServices",
-      "ecs:DescribeTaskDefinition",
-      "ecs:DescribeTasks",
-      "ecs:ListTasks",
-      "ecs:UpdateService",
-    ]
-    resources = ["*"] # ECS describe/update actions do not support fine-grained resource ARNs for services.
+    resources = ["arn:aws:codebuild:${var.aws_region}:${data.aws_caller_identity.current.account_id}:project/${var.project}-*"]
   }
 }
 

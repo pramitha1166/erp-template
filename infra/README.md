@@ -26,6 +26,15 @@ ECS Fargate (private subnets)
 ECR: one repository per app image, pulled by the ECS execution role.
 Secrets Manager: DB credentials, injected into the task definition via
 `secrets` (never a plaintext environment variable).
+
+Build pipeline (deliberately NOT GitHub-hosted compute — see "Why
+CodeBuild" below):
+  GitHub Actions (seconds)         AWS CodeBuild (minutes)
+  ─────────────────────────         ───────────────────────
+  zip backend/ + frontend/    ──▶   docker build
+  upload to S3                      docker push → ECR
+  codebuild start-build             ecs update-service --force-new-deployment
+  poll until done
 ```
 
 Single NAT gateway, single-AZ RDS/Redis — cost-optimized for a staging
@@ -48,9 +57,24 @@ infra/
     redis/                ElastiCache
     alb/                  Load balancer, target groups, listener(s)
     ecs/                  Cluster, task definitions, services, IAM
+    codebuild/             Build projects (docker build/push/deploy),
+                           source-zip S3 bucket, CodeBuild service role
   environments/
     staging/              Wires every module together for one environment
 ```
+
+### Why CodeBuild instead of building in GitHub Actions
+
+The first cut of `deploy.yml` ran `docker build` directly on the GitHub
+Actions runner. That works, but a Maven multi-stage build plus an
+`npm ci && next build` easily eats several minutes of GitHub Actions
+compute per deploy — minutes that, on a metered plan, you'd rather not
+spend. Moving the build itself onto AWS CodeBuild means GitHub Actions
+only ever does a zip + S3 upload + API trigger + poll (seconds), and the
+actual compute-heavy work runs on AWS, billed to AWS. Routine app deploys
+now touch three things: the CodeBuild project (build), ECR (image
+storage), and the ECS service (rollout) — GitHub Actions is just the
+trigger.
 
 ## One-time setup (do this once, by hand)
 
@@ -72,12 +96,21 @@ Review the plan — it creates:
   - `eudext-erp-gha-terraform-plan` — read-only, any branch/PR.
   - `eudext-erp-gha-terraform-apply` — can create/modify/destroy the app's
     AWS footprint. Trusted only for the `staging` GitHub Environment.
-  - `eudext-erp-gha-app-deploy` — ECR push + `ecs:UpdateService` only.
+  - `eudext-erp-gha-app-deploy` — only `s3:PutObject` on the build-source
+    bucket and `codebuild:StartBuild`/`BatchGetBuilds`. No ECR, ECS, or
+    anything else — the actual image build/push/deploy runs under
+    CodeBuild's own service role (`infra/modules/codebuild`), not this one.
     Trusted only for the `staging` GitHub Environment.
 
 Keep `infra/bootstrap/terraform.tfstate` somewhere durable (it's not
 secret, but it's the only record of what this stack created) — it is not,
 and should not be, committed to git.
+
+> Already ran this once before? `app_deploy`'s permissions changed (ECR
+> push/ECS update-service → S3 upload + CodeBuild trigger, now that builds
+> run on CodeBuild instead of the GitHub Actions runner). Re-run
+> `terraform apply` here to pick up the new policy — it updates the
+> existing role in place, no new bootstrap needed.
 
 Note the four outputs — you'll need them next:
 
@@ -120,21 +153,28 @@ terraform plan
 terraform apply
 ```
 
-This creates the VPC, RDS, Redis, ALB, ECS cluster/services, and empty ECR
-repositories. **The ECS services will sit in a pending/failing state until
-the first image is pushed** — that's expected, not a bug. Continue to step 5.
+This creates the VPC, RDS, Redis, ALB, ECS cluster/services, CodeBuild
+projects, and empty ECR repositories. **The ECS services will sit in a
+pending/failing state until the first image is pushed** — that's expected,
+not a bug. Continue to step 5.
 
 ### 5. First deploy
 
 `.github/workflows/deploy.yml` triggers automatically after `CI` succeeds
-on `main` (via `workflow_run`), so the very next push to `main` after step
-4 will build both images, push `:staging` and `:<sha>` tags to ECR, and
-force a new ECS deployment. After that, `terraform apply` (infra changes)
-and `deploy` (app changes) run independently — a normal code change never
-touches Terraform, and an infra change never rebuilds the app images.
+on `main` (via `workflow_run`). It zips `backend/` and `frontend/`,
+uploads each to the `codebuild_source_bucket` output, and calls
+`codebuild start-build` for both `codebuild_project_names` — CodeBuild then
+does the actual `docker build`, pushes `:staging` and `:<sha>` tags to ECR,
+and force-redeploys the matching ECS service. So the very next push to
+`main` after step 4 triggers the first real deploy. After that,
+`terraform apply` (infra changes) and the deploy pipeline (app changes)
+run independently — a normal code change never touches Terraform, and an
+infra change never rebuilds the app images.
 
 Find the app at the `alb_dns_name` output (plain HTTP until a certificate
-is configured — see below).
+is configured — see below). If a deploy fails, the workflow run links to
+which app failed; the actual build log is in CloudWatch under
+`/codebuild/eudext-erp-staging-backend` or `-frontend`.
 
 ## Day 2
 

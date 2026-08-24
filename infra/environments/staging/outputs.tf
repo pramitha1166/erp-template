@@ -26,3 +26,12 @@ output "rds_endpoint" {
 output "attachments_bucket_name" {
   value = module.storage.bucket_name
 }
+
+output "codebuild_source_bucket" {
+  description = "Where .github/workflows/deploy.yml uploads source zips before triggering a build."
+  value       = module.codebuild.source_bucket
+}
+
+output "codebuild_project_names" {
+  value = module.codebuild.project_names
+}
