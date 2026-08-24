@@ -142,8 +142,10 @@ of these are sensitive, they're ARNs and a region):
 ### 4. First `terraform apply`
 
 Either open a PR touching `infra/` (runs `plan` for review) and merge it —
-`.github/workflows/terraform.yml`'s `apply` job runs on merge to `main` —
-or run it yourself once from a machine with your AWS credentials:
+`.github/workflows/terraform.yml`'s `apply` job runs on merge to
+`claude/srs-review-breakdown-49ecvy` (the repo's integration branch — there
+is currently no `main`) — or run it yourself once from a machine with your
+AWS credentials:
 
 ```bash
 cd infra/environments/staging
@@ -161,12 +163,13 @@ not a bug. Continue to step 5.
 ### 5. First deploy
 
 `.github/workflows/deploy.yml` triggers automatically after `CI` succeeds
-on `main` (via `workflow_run`). It zips `backend/` and `frontend/`,
-uploads each to the `codebuild_source_bucket` output, and calls
-`codebuild start-build` for both `codebuild_project_names` — CodeBuild then
-does the actual `docker build`, pushes `:staging` and `:<sha>` tags to ECR,
-and force-redeploys the matching ECS service. So the very next push to
-`main` after step 4 triggers the first real deploy. After that,
+on `claude/srs-review-breakdown-49ecvy` (via `workflow_run`). It zips
+`backend/` and `frontend/`, uploads each to the `codebuild_source_bucket`
+output, and calls `codebuild start-build` for both `codebuild_project_names`
+— CodeBuild then does the actual `docker build`, pushes `:staging` and
+`:<sha>` tags to ECR, and force-redeploys the matching ECS service. So the
+very next push to `claude/srs-review-breakdown-49ecvy` after step 4
+triggers the first real deploy. After that,
 `terraform apply` (infra changes) and the deploy pipeline (app changes)
 run independently — a normal code change never touches Terraform, and an
 infra change never rebuilds the app images.

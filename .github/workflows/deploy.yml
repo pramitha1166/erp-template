@@ -1,7 +1,8 @@
 name: Deploy
 
-# Fires after CI goes green on main — never builds/deploys an image that
-# hasn't passed backend+frontend CI first.
+# Fires after CI goes green on claude/srs-review-breakdown-49ecvy (the
+# repo's integration branch — there is no `main`) — never builds/deploys an
+# image that hasn't passed backend+frontend CI first.
 #
 # This job intentionally does almost nothing itself: it zips the source and
 # hands it to AWS CodeBuild (infra/modules/codebuild), which does the
@@ -13,7 +14,7 @@ on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
-    branches: [main]
+    branches: [claude/srs-review-breakdown-49ecvy]
 
 permissions:
   id-token: write # required for AWS OIDC federation — no long-lived keys
