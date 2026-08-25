@@ -23,6 +23,7 @@ module "storage" {
 
 module "alb" {
   source = "../../modules/alb"
+  count  = var.enable_alb ? 1 : 0
 
   project           = var.project
   environment       = var.environment
@@ -51,6 +52,7 @@ module "rds" {
 
 module "redis" {
   source = "../../modules/redis"
+  count  = var.enable_redis ? 1 : 0
 
   project                 = var.project
   environment             = var.environment
@@ -75,11 +77,12 @@ module "ecs" {
   task_subnet_ids       = var.enable_nat_gateway ? module.network.private_subnet_ids : module.network.public_subnet_ids
   assign_task_public_ip = !var.enable_nat_gateway
 
-  alb_security_group_id     = module.alb.security_group_id
-  alb_listener_arn          = module.alb.listener_arn
-  frontend_target_group_arn = module.alb.frontend_target_group_arn
-  backend_target_group_arn  = module.alb.backend_target_group_arn
-  public_base_url           = "http://${module.alb.dns_name}"
+  # Without an ALB the tasks are reached directly on their own public IPs,
+  # which change on every deployment — see infra/scripts/env.sh.
+  alb_security_group_id     = var.enable_alb ? module.alb[0].security_group_id : ""
+  frontend_target_group_arn = var.enable_alb ? module.alb[0].frontend_target_group_arn : ""
+  backend_target_group_arn  = var.enable_alb ? module.alb[0].backend_target_group_arn : ""
+  public_base_url           = var.enable_alb ? "http://${module.alb[0].dns_name}" : ""
 
   backend_image  = "${module.ecr.repository_urls["backend"]}:${var.backend_image_tag}"
   frontend_image = "${module.ecr.repository_urls["frontend"]}:${var.frontend_image_tag}"
@@ -88,8 +91,11 @@ module "ecs" {
   frontend_desired_count = var.frontend_desired_count
 
   db_secret_arn = module.rds.secret_arn
-  redis_host    = module.redis.endpoint
-  redis_port    = module.redis.port
+
+  # "" tells the ECS module there is no Redis, and to stop the backend
+  # health-checking one that isn't there.
+  redis_host = var.enable_redis ? module.redis[0].endpoint : ""
+  redis_port = var.enable_redis ? module.redis[0].port : 6379
 
   attachments_bucket_name = module.storage.bucket_name
   attachments_bucket_arn  = module.storage.bucket_arn
@@ -103,7 +109,7 @@ module "codebuild" {
   aws_region       = var.aws_region
   ecs_cluster_name = module.ecs.cluster_name
   github_repo      = var.github_repo
-  app_base_url     = "http://${module.alb.dns_name}"
+  app_base_url     = var.enable_alb ? "http://${module.alb[0].dns_name}" : ""
 
   apps = {
     backend = {

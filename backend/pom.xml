@@ -26,6 +26,7 @@
     <mapstruct.version>1.6.3</mapstruct.version>
     <jjwt.version>0.12.6</jjwt.version>
     <aws-sdk.version>2.29.52</aws-sdk.version>
+    <bouncycastle.version>1.78.1</bouncycastle.version>
   </properties>
 
   <dependencyManagement>
@@ -82,6 +83,19 @@
            checks (IAM-3..IAM-7). -->
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <dependency>
+      <!-- IAM-1: spring-security-crypto's Argon2PasswordEncoder loads its
+           Argon2 implementation from BouncyCastle at runtime rather than
+           linking against it at compile time, so Spring Boot doesn't pull
+           it in transitively — without this, every encode()/matches() call
+           (every login, every password change) throws
+           NoClassDefFoundError. Not managed by the Spring Boot BOM, hence
+           the explicit version. -->
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+      <version>${bouncycastle.version}</version>
+      <scope>runtime</scope>
     </dependency>
 
     <!-- IAM-1: JWT access/refresh token issuance and parsing. -->

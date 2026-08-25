@@ -57,6 +57,30 @@ variable "enable_nat_gateway" {
   default     = false
 }
 
+variable "enable_alb" {
+  description = <<-EOT
+    Put an Application Load Balancer in front of the services. Off by
+    default: it costs about USD 17/month plus its public IPv4 addresses, and
+    it bills whether or not anything is deployed behind it. With it off the
+    two services are reached directly on their tasks' public IPs — which
+    change on every deployment, and carry no TLS. Turn it on for anything
+    resembling production, or as soon as a stable URL matters.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "enable_redis" {
+  description = <<-EOT
+    Deploy ElastiCache. Off by default: it costs about USD 15/month and no
+    application code reads from it yet — only the test suite, which uses its
+    own Testcontainers Redis. Turn it on in the same change that introduces
+    the first real use.
+  EOT
+  type        = bool
+  default     = false
+}
+
 variable "rds_instance_class" {
   type    = string
   default = "db.t4g.micro"

@@ -41,6 +41,13 @@ management:
       probes:
         enabled: true
 
+app:
+  cors:
+    # Any origin: the frontend and backend are separate hosts, and in the dev
+    # environment their addresses change on every deployment. Set this to the
+    # real frontend origin(s) in production, comma-separated.
+    allowed-origin-patterns: "*"
+
 springdoc:
   api-docs:
     path: /v3/api-docs

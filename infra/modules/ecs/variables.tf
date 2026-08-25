@@ -31,20 +31,25 @@ variable "assign_task_public_ip" {
 }
 
 variable "alb_security_group_id" {
-  type = string
+  description = "ALB security group allowed to reach the tasks, or \"\" to run without a load balancer and expose the tasks directly."
+  type        = string
+  default     = ""
 }
 
-variable "alb_listener_arn" {
-  description = "Forces services to wait for the ALB listener to exist before attaching targets."
+variable "direct_ingress_cidr" {
+  description = "Who may reach the task ports when there is no load balancer. Narrow this to your own address unless the environment is genuinely disposable."
   type        = string
+  default     = "0.0.0.0/0"
 }
 
 variable "frontend_target_group_arn" {
-  type = string
+  type    = string
+  default = ""
 }
 
 variable "backend_target_group_arn" {
-  type = string
+  type    = string
+  default = ""
 }
 
 variable "backend_image" {
@@ -108,11 +113,14 @@ variable "db_secret_arn" {
 }
 
 variable "redis_host" {
-  type = string
+  description = "Redis endpoint, or \"\" when no Redis is deployed — the backend is then told to skip its Redis health check."
+  type        = string
+  default     = ""
 }
 
 variable "redis_port" {
-  type = number
+  type    = number
+  default = 6379
 }
 
 variable "attachments_bucket_name" {

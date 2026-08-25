@@ -27,22 +27,35 @@ resource "aws_security_group" "tasks" {
   tags        = merge(local.common_tags, { Name = "${local.name}-tasks" })
 }
 
-resource "aws_vpc_security_group_ingress_rule" "from_alb_backend" {
-  security_group_id            = aws_security_group.tasks.id
-  referenced_security_group_id = var.alb_security_group_id
-  from_port                    = 8080
-  to_port                      = 8080
-  ip_protocol                  = "tcp"
-  description                  = "Backend from ALB"
+locals {
+  behind_alb  = var.alb_security_group_id != ""
+  task_ports  = { backend = 8080, frontend = 3000 }
+  alb_ingress = local.behind_alb ? local.task_ports : {}
+  # No load balancer means the tasks are the endpoint, so the ports have to
+  # be open to whoever needs to reach them. var.direct_ingress_cidr narrows
+  # that to your own address; the default lets in the whole internet, which
+  # is a real exposure for anything but a throwaway dev environment.
+  direct_ingress = local.behind_alb ? {} : local.task_ports
 }
 
-resource "aws_vpc_security_group_ingress_rule" "from_alb_frontend" {
+resource "aws_vpc_security_group_ingress_rule" "from_alb" {
+  for_each                     = local.alb_ingress
   security_group_id            = aws_security_group.tasks.id
   referenced_security_group_id = var.alb_security_group_id
-  from_port                    = 3000
-  to_port                      = 3000
+  from_port                    = each.value
+  to_port                      = each.value
   ip_protocol                  = "tcp"
-  description                  = "Frontend from ALB"
+  description                  = "${each.key} from ALB"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "direct" {
+  for_each          = local.direct_ingress
+  security_group_id = aws_security_group.tasks.id
+  cidr_ipv4         = var.direct_ingress_cidr
+  from_port         = each.value
+  to_port           = each.value
+  ip_protocol       = "tcp"
+  description       = "${each.key} direct (no load balancer)"
 }
 
 resource "aws_vpc_security_group_egress_rule" "all_outbound" {
@@ -119,6 +132,26 @@ resource "aws_iam_role_policy" "backend_s3" {
   policy = data.aws_iam_policy_document.backend_s3.json
 }
 
+locals {
+  # With no Redis deployed, the backend must also be told not to health-check
+  # it: spring-boot-starter-data-redis is on the classpath, so its health
+  # indicator would report DOWN, the ALB would fail the task, and ECS would
+  # replace it forever. Spring's relaxed binding maps this env var onto
+  # `management.health.redis.enabled`.
+  backend_environment = concat(
+    [
+      { name = "AWS_REGION", value = var.aws_region },
+      { name = "ATTACHMENTS_BUCKET", value = var.attachments_bucket_name },
+    ],
+    var.redis_host == "" ? [
+      { name = "MANAGEMENT_HEALTH_REDIS_ENABLED", value = "false" },
+      ] : [
+      { name = "REDIS_HOST", value = var.redis_host },
+      { name = "REDIS_PORT", value = tostring(var.redis_port) },
+    ]
+  )
+}
+
 # ---------------------------------------------------------------------------
 # Logs
 # ---------------------------------------------------------------------------
@@ -156,12 +189,7 @@ resource "aws_ecs_task_definition" "backend" {
       portMappings = [
         { containerPort = 8080, protocol = "tcp" }
       ]
-      environment = [
-        { name = "REDIS_HOST", value = var.redis_host },
-        { name = "REDIS_PORT", value = tostring(var.redis_port) },
-        { name = "AWS_REGION", value = var.aws_region },
-        { name = "ATTACHMENTS_BUCKET", value = var.attachments_bucket_name },
-      ]
+      environment = local.backend_environment
       secrets = [
         { name = "DB_URL", valueFrom = "${var.db_secret_arn}:url::" },
         { name = "DB_USERNAME", valueFrom = "${var.db_secret_arn}:username::" },
@@ -191,8 +219,9 @@ resource "aws_ecs_service" "backend" {
   # The backend takes ~55s to boot (Spring context + Flyway validation),
   # longer than the target group's 3 x 15s to declare a target unhealthy.
   # Without this grace period ECS kills every new task mid-startup and no
-  # deployment ever completes.
-  health_check_grace_period_seconds = var.backend_health_check_grace_seconds
+  # deployment ever completes. ECS rejects the setting outright when no load
+  # balancer is attached, hence the null.
+  health_check_grace_period_seconds = local.behind_alb ? var.backend_health_check_grace_seconds : null
 
   network_configuration {
     subnets          = var.task_subnet_ids
@@ -200,21 +229,26 @@ resource "aws_ecs_service" "backend" {
     assign_public_ip = var.assign_task_public_ip
   }
 
-  load_balancer {
-    target_group_arn = var.backend_target_group_arn
-    container_name   = "backend"
-    container_port   = 8080
+  dynamic "load_balancer" {
+    for_each = local.behind_alb ? [1] : []
+    content {
+      target_group_arn = var.backend_target_group_arn
+      container_name   = "backend"
+      container_port   = 8080
+    }
   }
 
   # The deploy pipeline rolls new images with `--force-new-deployment`
   # against the ":staging" tag rather than by registering new task-def
   # revisions, so Terraform never fights it over which revision is "current".
+  # desired_count is ignored for the same reason: infra/scripts/env.sh scales
+  # the environment to zero between sessions, and a later `terraform apply`
+  # must not quietly switch it all back on.
   lifecycle {
-    ignore_changes = [task_definition]
+    ignore_changes = [task_definition, desired_count]
   }
 
-  depends_on = [var.alb_listener_arn]
-  tags       = local.common_tags
+  tags = local.common_tags
 }
 
 # ---------------------------------------------------------------------------
@@ -262,7 +296,7 @@ resource "aws_ecs_service" "frontend" {
   desired_count   = var.frontend_desired_count
   launch_type     = "FARGATE"
 
-  health_check_grace_period_seconds = var.frontend_health_check_grace_seconds
+  health_check_grace_period_seconds = local.behind_alb ? var.frontend_health_check_grace_seconds : null
 
   network_configuration {
     subnets          = var.task_subnet_ids
@@ -270,16 +304,18 @@ resource "aws_ecs_service" "frontend" {
     assign_public_ip = var.assign_task_public_ip
   }
 
-  load_balancer {
-    target_group_arn = var.frontend_target_group_arn
-    container_name   = "frontend"
-    container_port   = 3000
+  dynamic "load_balancer" {
+    for_each = local.behind_alb ? [1] : []
+    content {
+      target_group_arn = var.frontend_target_group_arn
+      container_name   = "frontend"
+      container_port   = 3000
+    }
   }
 
   lifecycle {
-    ignore_changes = [task_definition]
+    ignore_changes = [task_definition, desired_count]
   }
 
-  depends_on = [var.alb_listener_arn]
-  tags       = local.common_tags
+  tags = local.common_tags
 }

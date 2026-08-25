@@ -142,7 +142,7 @@ terraform plan
 terraform apply
 ```
 
-This creates the VPC, RDS, Redis, ALB, ECS cluster/services, CodeBuild
+This creates the VPC, RDS, ECS cluster/services, CodeBuild
 projects, the CodePipeline itself, and empty ECR repositories. **The ECS
 services will sit in a pending/failing state, and the GitHub connection
 will be unusable, until step 4** — that's expected, not a bug.
@@ -200,10 +200,52 @@ trigger the first build. It builds both images, pushes `:staging` and
 progress in the CodePipeline console, or in CloudWatch under
 `/codebuild/eudext-erp-staging-backend` / `-frontend`.
 
-Find the app at the `alb_dns_name` output (plain HTTP until a certificate
-is configured — see below).
+Find the running app with `./infra/scripts/env.sh status`, which prints the
+tasks' current addresses. There is no load balancer in this environment
+(see `enable_alb`), so those addresses change every time a task starts.
 
 ## Day 2
+
+**Running the environment only while you work on it.** The AWS account is
+on the credit-based Free plan, so idle infrastructure burns real credits.
+Everything expensive is switchable:
+
+```bash
+./infra/scripts/env.sh up       # ~3 minutes, prints the URLs
+./infra/scripts/env.sh status   # what is running, and where
+./infra/scripts/env.sh down     # when you stop for the day
+```
+
+`up` starts the database, waits for it (the backend fails its health check
+without one), scales both services back to one task, and prints their
+addresses. `down` reverses it: about **USD 60/month while up, USD 5/month
+while down** — the residue is the stopped database's disk, two secrets, the
+pipeline, and stored images.
+
+Because there is no load balancer, **the addresses change every time a task
+starts**. Take them from `up` or `status`; don't bookmark them.
+
+Two things that would otherwise surprise you:
+
+- AWS restarts a stopped RDS instance by itself after 7 days. Run `down`
+  again if the environment is still idle then.
+- `terraform apply` does not switch the environment back on. Both services
+  ignore changes to `desired_count` precisely so that applying
+  infrastructure changes while the environment is down leaves it down.
+
+**Changing a task definition needs an extra step.** Both ECS services
+declare `ignore_changes = [task_definition]` so the deploy pipeline owns
+what image is running. The side effect: `terraform apply` creates a new
+task-definition revision, but the service stays pinned to the old one, and
+`--force-new-deployment` re-pulls that same old revision. After changing
+container environment variables, secrets, CPU, or memory, move the service
+across explicitly:
+
+```bash
+aws ecs update-service --cluster eudext-erp-staging \
+  --service eudext-erp-staging-backend \
+  --task-definition eudext-erp-staging-backend   # resolves to the latest revision
+```
 
 **Applying infrastructure changes:** there is no CI for Terraform — edit
 the code, then plan and apply it yourself:
@@ -220,9 +262,12 @@ commit the code you applied: the bucket records what the account looks
 like, not why, and with no CI plan on PRs the diff in git is the only
 review this infrastructure gets.
 
-**Adding a custom domain + HTTPS (BRD-4):** request/import a certificate
-in ACM for the domain, point a Route 53 (or your DNS provider's) record at
-the ALB, then set the `certificate_arn` variable in
+**Adding a custom domain + HTTPS (BRD-4):** first set `enable_alb = true` —
+a stable hostname and TLS both terminate at the load balancer, and neither
+is possible with tasks addressed by their own rotating IPs. Then
+request/import a certificate in ACM for the domain, point a Route 53 (or
+your DNS provider's) record at the ALB, then set the `certificate_arn`
+variable in
 `infra/environments/staging/variables.tf` (or pass
 `-var certificate_arn=...`) and re-apply. The ALB module adds an HTTPS
 listener + HTTP→HTTPS redirect automatically once that variable is set.
