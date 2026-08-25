@@ -3,15 +3,15 @@
 # Start and stop the staging environment, so it only costs money while
 # someone is actually working on it.
 #
-#   ./infra/scripts/env.sh down     # ~$85/mo  ->  ~$30/mo
+#   ./infra/scripts/env.sh down     # ~$60/mo  ->  ~$5/mo
 #   ./infra/scripts/env.sh up       # back in ~3 minutes
 #   ./infra/scripts/env.sh status
 #
-# `down` scales both ECS services to zero and stops the RDS instance. It
-# keeps the ALB, its DNS name, and the database volume, so `up` is fast and
-# nothing has to be reconfigured. What it cannot switch off is the ALB and
-# its Elastic IPs — a load balancer cannot be stopped, only destroyed — so a
-# long break is better served by `terraform destroy` (see infra/README.md).
+# `down` scales both ECS services to zero and stops the RDS instance; `up`
+# reverses it and prints the URLs. There is no load balancer in this
+# environment, so the tasks are reached on their own public IPs — which are
+# new every time they start. Always take the addresses from `up`/`status`;
+# never bookmark them.
 #
 # Note: AWS restarts a stopped RDS instance automatically after 7 days.
 # Run `down` again after that if the environment is still idle.
@@ -34,6 +34,36 @@ scale() {
   echo "  $1 -> desired $2"
 }
 
+# The public IP lives on the task's ENI, not on the task, so it takes a
+# second hop through EC2 to find it.
+task_ip() {
+  local task
+  task=$(aws ecs list-tasks --cluster "$CLUSTER" --service-name "$1" \
+    --desired-status RUNNING --query 'taskArns[0]' --output text)
+  [ "$task" = "None" ] || [ -z "$task" ] && return 1
+
+  local eni
+  eni=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$task" \
+    --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value | [0]" \
+    --output text)
+  [ "$eni" = "None" ] && return 1
+
+  aws ec2 describe-network-interfaces --network-interface-ids "$eni" \
+    --query 'NetworkInterfaces[0].Association.PublicIp' --output text
+}
+
+urls() {
+  local fe be
+  fe=$(task_ip "$FRONTEND" 2>/dev/null || true)
+  be=$(task_ip "$BACKEND" 2>/dev/null || true)
+  [ -n "${fe:-}" ] && [ "$fe" != "None" ] && echo "  app:  http://${fe}:3000"
+  [ -n "${be:-}" ] && [ "$be" != "None" ] && {
+    echo "  api:  http://${be}:8080/api"
+    echo "  docs: http://${be}:8080/api/swagger-ui.html"
+  }
+  return 0
+}
+
 db_status() {
   aws rds describe-db-instances --db-instance-identifier "$DB" \
     --query 'DBInstances[0].DBInstanceStatus' --output text 2>/dev/null || echo "absent"
@@ -54,19 +84,36 @@ case "${1:-status}" in
       echo "  database is '$status' — leaving it alone"
     fi
     echo
-    echo "Down. Roughly \$30/month keeps running — the ALB and its two"
-    echo "Elastic IPs are most of it. See infra/README.md to destroy those too."
+    echo "Down. About \$5/month keeps running: the stopped database's disk,"
+    echo "two secrets, the pipeline, and stored images."
     ;;
 
   up)
     status=$(db_status)
-    if [ "$status" = "stopped" ]; then
-      echo "Starting the database (takes a few minutes)..."
-      aws rds start-db-instance --db-instance-identifier "$DB" \
-        --query 'DBInstance.DBInstanceStatus' --output text
-    else
-      echo "Database is '$status'."
+
+    # RDS refuses to start an instance that is still shutting down, and a
+    # "stopping" instance never reaches "available" on its own — so wait it
+    # out rather than hanging later on the availability check.
+    if [ "$status" = "stopping" ]; then
+      echo "Database is still stopping; waiting for it to settle..."
+      while [ "$(db_status)" = "stopping" ]; do sleep 15; done
+      status=$(db_status)
     fi
+
+    case "$status" in
+      stopped)
+        echo "Starting the database (takes a few minutes)..."
+        aws rds start-db-instance --db-instance-identifier "$DB" \
+          --query 'DBInstance.DBInstanceStatus' --output text
+        ;;
+      absent)
+        echo "No database named '$DB' in $REGION — run terraform apply first." >&2
+        exit 1
+        ;;
+      *)
+        echo "Database is '$status'."
+        ;;
+    esac
 
     # The backend fails its health check without a reachable database, and
     # ECS would then kill the tasks — so wait for RDS before scaling up.
@@ -80,10 +127,9 @@ case "${1:-status}" in
     echo "Waiting for tasks to go healthy (the backend takes ~1 minute to boot)..."
     aws ecs wait services-stable --cluster "$CLUSTER" --services "$BACKEND" "$FRONTEND"
 
-    url=$(aws elbv2 describe-load-balancers --names "$CLUSTER" \
-      --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || true)
     echo
-    echo "Up. http://${url}"
+    echo "Up."
+    urls
     ;;
 
   status)
@@ -91,6 +137,7 @@ case "${1:-status}" in
     aws ecs describe-services --cluster "$CLUSTER" --services "$BACKEND" "$FRONTEND" \
       --query 'services[].{service:serviceName,desired:desiredCount,running:runningCount}' \
       --output table
+    urls
     ;;
 
   *)

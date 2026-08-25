@@ -142,7 +142,7 @@ terraform plan
 terraform apply
 ```
 
-This creates the VPC, RDS, Redis, ALB, ECS cluster/services, CodeBuild
+This creates the VPC, RDS, ECS cluster/services, CodeBuild
 projects, the CodePipeline itself, and empty ECR repositories. **The ECS
 services will sit in a pending/failing state, and the GitHub connection
 will be unusable, until step 4** — that's expected, not a bug.
@@ -200,31 +200,38 @@ trigger the first build. It builds both images, pushes `:staging` and
 progress in the CodePipeline console, or in CloudWatch under
 `/codebuild/eudext-erp-staging-backend` / `-frontend`.
 
-Find the app at the `alb_dns_name` output (plain HTTP until a certificate
-is configured — see below).
+Find the running app with `./infra/scripts/env.sh status`, which prints the
+tasks' current addresses. There is no load balancer in this environment
+(see `enable_alb`), so those addresses change every time a task starts.
 
 ## Day 2
 
-**Turning the environment off between sessions:** this environment costs
-roughly USD 85/month running around the clock, on an account whose Free
-plan is credit-based — idle time burns real credits. Use:
+**Running the environment only while you work on it.** The AWS account is
+on the credit-based Free plan, so idle infrastructure burns real credits.
+Everything expensive is switchable:
 
 ```bash
-./infra/scripts/env.sh down     # scale to zero, stop the database
-./infra/scripts/env.sh up       # back up in ~3 minutes
-./infra/scripts/env.sh status
+./infra/scripts/env.sh up       # ~3 minutes, prints the URLs
+./infra/scripts/env.sh status   # what is running, and where
+./infra/scripts/env.sh down     # when you stop for the day
 ```
 
-`down` takes it to about USD 30/month and keeps the ALB's DNS name, the
-database volume, and every configured value, so `up` needs no
-reconfiguration. What it cannot switch off is the ALB (~USD 17/month) and
-the two Elastic IPs attached to it — neither an ALB nor an ElastiCache node
-can be stopped, only destroyed. For a break of more than a week or two,
-`terraform destroy` in `environments/staging` takes it to near zero; the
-cost is a new ALB DNS name and an empty database on the way back up.
+`up` starts the database, waits for it (the backend fails its health check
+without one), scales both services back to one task, and prints their
+addresses. `down` reverses it: about **USD 60/month while up, USD 5/month
+while down** — the residue is the stopped database's disk, two secrets, the
+pipeline, and stored images.
 
-AWS restarts a stopped RDS instance by itself after 7 days. Re-run `down`
-if the environment is still idle then.
+Because there is no load balancer, **the addresses change every time a task
+starts**. Take them from `up` or `status`; don't bookmark them.
+
+Two things that would otherwise surprise you:
+
+- AWS restarts a stopped RDS instance by itself after 7 days. Run `down`
+  again if the environment is still idle then.
+- `terraform apply` does not switch the environment back on. Both services
+  ignore changes to `desired_count` precisely so that applying
+  infrastructure changes while the environment is down leaves it down.
 
 **Changing a task definition needs an extra step.** Both ECS services
 declare `ignore_changes = [task_definition]` so the deploy pipeline owns
@@ -255,9 +262,12 @@ commit the code you applied: the bucket records what the account looks
 like, not why, and with no CI plan on PRs the diff in git is the only
 review this infrastructure gets.
 
-**Adding a custom domain + HTTPS (BRD-4):** request/import a certificate
-in ACM for the domain, point a Route 53 (or your DNS provider's) record at
-the ALB, then set the `certificate_arn` variable in
+**Adding a custom domain + HTTPS (BRD-4):** first set `enable_alb = true` —
+a stable hostname and TLS both terminate at the load balancer, and neither
+is possible with tasks addressed by their own rotating IPs. Then
+request/import a certificate in ACM for the domain, point a Route 53 (or
+your DNS provider's) record at the ALB, then set the `certificate_arn`
+variable in
 `infra/environments/staging/variables.tf` (or pass
 `-var certificate_arn=...`) and re-apply. The ALB module adds an HTTPS
 listener + HTTP→HTTPS redirect automatically once that variable is set.

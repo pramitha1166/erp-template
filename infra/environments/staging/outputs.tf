@@ -1,6 +1,6 @@
 output "alb_dns_name" {
-  description = "Public URL for the environment (http:// until certificate_arn is set)."
-  value       = module.alb.dns_name
+  description = "Public URL for the environment, empty when enable_alb is false (the tasks are then reached on their own public IPs — `./infra/scripts/env.sh status`)."
+  value       = var.enable_alb ? module.alb[0].dns_name : ""
 }
 
 output "ecr_repository_urls" {
