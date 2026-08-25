@@ -226,6 +226,44 @@ Branch is a first-class posting dimension, not an attribute. Retail chains, mult
 
 ---
 
+### 3.10 Tenant Onboarding and Administration — `PLAT-ADMIN`
+
+**Gap identified post-draft (addendum).** BRD-14 specifies a brand-level
+partner console but stops there; nothing in v1.0 specifies who provisions a
+*Brand* itself, and Acceptance Criterion 1 ("a company can be set up from
+zero to first invoice in under 4 hours") implies an onboarding workflow
+without ever defining one. Two consoles are required, at two different
+altitudes, plus the onboarding flow both of them drive:
+
+- **Platform Admin Console** — Eudext's own operators. Creates and manages
+  Brands, sees usage across all brands, sets platform-wide default
+  entitlements.
+- **Brand Admin Console** — the reseller partner (BRD-14). Creates and
+  manages the Tenants under their own Brand only.
+- **Tenant onboarding workflow** — what either console triggers to actually
+  stand up a new Tenant: first Company, first admin user, seeded master
+  data, ready for its first transaction.
+
+| ID | Requirement |
+|---|---|
+| ADM-1 | Platform Admin Console (Eudext operator role, distinct from any tenant or brand role): create, suspend, and reactivate Brands; view a cross-brand tenant/usage summary; set platform-wide default feature entitlements that brands inherit unless overridden (BRD-12) |
+| ADM-2 | Tenant onboarding workflow: creates a Tenant under a Brand, its first Company (MDM-1 fields), the initial tenant-admin user, and an assigned entitlement/plan set, in one guided flow — completable in under 4 hours per Acceptance Criterion 1 |
+| ADM-3 | Onboarding seeds default data so the tenant is transaction-ready: a Chart of Accounts template (localised for Sri Lanka where `MOD-LK` is entitled), default numbering series (NUM-1), and a default fiscal year/accounting period (MDM-9) |
+| ADM-4 | Post-onboarding guided setup checklist shown to the tenant admin, tracking completion of: branches, users/roles, chart of accounts review, opening balances, first item/customer/supplier, first invoice |
+| ADM-5 | Brand Admin Console (detail on BRD-14): brand partner staff create/suspend Tenants within their own Brand only, invite tenant-admin users, view per-tenant usage (BRD-15), and assign tenant-level entitlements bounded by what the Brand itself is entitled to |
+| ADM-6 | Tenant suspension and reactivation: a suspended tenant blocks new user logins and new transactional postings, but retains full data and read/report access for platform and brand admins |
+| ADM-7 | Support impersonation: a platform or brand admin may start a time-boxed, scoped session as a tenant-admin for support purposes. Every impersonated action is written to the audit trail (AUD-1/AUD-2) explicitly tagged as impersonated, and the tenant is notified when it happens |
+| ADM-8 | Tenant-initiated data export and erasure requests (PDPA, NFR-S7) are logged, tracked to completion, and actioned from the admin console, reusing the full data export capability (NFR-D5) |
+| ADM-9 | Platform-level usage and health dashboard: tenant count, active users, storage consumption, and transaction volume, rolled up by Brand, plus basic system health indicators |
+
+**Design note:** ADM-1 and ADM-5 are genuinely different roles at different
+altitudes — a Brand admin must never see another Brand's tenants, and a
+Tenant admin must never see the admin console at all. Model these as
+distinct permission scopes from the start, not as "IAM-3 roles with a
+higher number."
+
+---
+
 ## 4. Functional Modules
 
 ### 4.1 Financial Accounting — `MOD-FIN`

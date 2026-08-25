@@ -177,9 +177,34 @@ Only the framework — most concrete reports ship with their owning module.
 | 0.10.6 | Async execution for reports >5s with completion notification | NFR-P4 | M |
 | 0.10.7 | Read-replica routing for report queries where configured | RPT-6 | M |
 
+### Epic 0.11 — Tenant Onboarding & Administration (`PLAT-ADMIN`)
+
+Added as an addendum after a gap review found no requirement covering who
+provisions a Brand, or how a Tenant actually gets onboarded — BRD-14 only
+specified the brand-level partner console. See `docs/SRS.md` §3.10.
+
+| Task | Description | SRS Ref | Size |
+|---|---|---|---|
+| 0.11.1 | Platform Admin Console backend: Brand CRUD (create/suspend/reactivate), cross-brand tenant/usage read APIs, platform-wide default entitlements | ADM-1 | L |
+| 0.11.2 | Tenant onboarding orchestration: create Tenant + first Company + initial admin user + entitlement assignment as one transactional flow | ADM-2 | L |
+| 0.11.3 | Default data seeding service invoked by onboarding: localised Chart of Accounts template, default numbering series, default fiscal year/period | ADM-3 | M |
+| 0.11.4 | Setup-checklist progress tracking API per tenant | ADM-4 | M |
+| 0.11.5 | Brand Admin Console backend: tenant CRUD scoped to the caller's own brand, tenant-admin invite flow, per-tenant usage read API | ADM-5, BRD-14, BRD-15 | L |
+| 0.11.6 | Tenant suspension/reactivation: block auth + posting endpoints for a suspended tenant while preserving admin read/report access | ADM-6 | M |
+| 0.11.7 | Impersonation: time-boxed scoped token issuance for admin-as-tenant-admin sessions, mandatory audit tagging + tenant notification | ADM-7 | L |
+| 0.11.8 | Data export/erasure request workflow API, reusing the full data export capability | ADM-8, NFR-S7, NFR-D5 | M |
+| 0.11.9 | Platform usage/health rollup API: tenant count, active users, storage, tx volume, system health, grouped by brand | ADM-9 | M |
+
+Model platform-admin and brand-admin as distinct permission scopes from the
+start (SRS design note on ADM-1/ADM-5) — not as ordinary IAM-3 roles with a
+higher permission count. Frontend companion: Epic F0.11, in the Frontend
+Track section below.
+
 **Phase 0 gate tasks:** tenant-isolation adversarial test (0.1.4), dummy
 document full-lifecycle test (0.1.2), second brand via config-only (0.8.17),
-branch-filtered visibility test (0.9.4).
+branch-filtered visibility test (0.9.4). Epic 0.11/F0.11 (ADM-2, ADM-3)
+directly serve Acceptance Criterion 1 (zero-to-first-invoice in under 4
+hours) and should be verified against it explicitly.
 
 ---
 
@@ -191,6 +216,9 @@ completed so far (0.0 Bootstrap, 0.1 Document Model, 0.2 IAM, 0.3 Audit,
 0.4 Workflow Engine) into its own explicit track so frontend work can be
 staffed and issued independently of backend progress. Frontend tasks for
 Epics 0.5–0.10 follow the same pattern once those backend epics land.
+Epic F0.11 (Admin Portal UI) is included here too since its backend
+companion, Epic 0.11, was added as a gap-review addendum rather than
+waiting in sequence behind 0.5–0.10.
 
 ### Epic F0.0 — Frontend App Shell & Bootstrap
 
@@ -257,6 +285,20 @@ Companion to Epic 0.4.
 | F0.4.4 | Approve/reject action screen with mandatory comment on rejection | WF-6 | M |
 | F0.4.5 | Delegation setup (date range) and escalation status indicator | WF-5 | M |
 | F0.4.6 | Approval history timeline component embedded on document detail views (shares groundwork with F0.3.1) | WF-7 | M |
+
+### Epic F0.11 — Admin Portal UI
+
+Frontend companion to Epic 0.11 (`PLAT-ADMIN`). Depends on Epic F0.0 (app
+shell) and Epic F0.2 (auth/permission patterns).
+
+| Task | Description | SRS Ref | Size |
+|---|---|---|---|
+| F0.11.1 | Platform Admin Console UI: brand list/create/suspend, cross-brand usage dashboard | ADM-1, ADM-9 | L |
+| F0.11.2 | Tenant onboarding wizard: company details → branches → fiscal year → initial admin user → plan/entitlement → review & create | ADM-2 | L |
+| F0.11.3 | Post-onboarding guided setup checklist widget with completion tracking | ADM-4 | M |
+| F0.11.4 | Brand Admin Console UI: tenant list/create/suspend within the brand, tenant-admin invite screen, per-tenant usage view | ADM-5, BRD-14, BRD-15 | L |
+| F0.11.5 | Impersonation entry point ("log in as tenant admin") with a persistent on-screen banner for the duration of an impersonated session | ADM-7 | M |
+| F0.11.6 | Tenant data export/erasure request screen for admins, with status tracking | ADM-8 | M |
 
 ---
 
@@ -593,7 +635,7 @@ inter-company transactions, cross-company consolidation.
 
 | # | Criterion | Primarily verified by |
 |---|---|---|
-| 1 | Zero-to-first-invoice in <4 hours | 6.5.6 |
+| 1 | Zero-to-first-invoice in <4 hours | 0.11.2, 0.11.3, F0.11.2, F0.11.3, 6.5.6 |
 | 2 | Trial balance balances across 10,000 mixed transactions | 1.1.1, 1.5.1 |
 | 3 | Stock valuation reconciles exactly to inventory GL | 2.1.4, 2.1.13 |
 | 4 | 200-employee payroll matches accountant calc to the cent | Phase 4 gate |
