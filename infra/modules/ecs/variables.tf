@@ -108,11 +108,14 @@ variable "db_secret_arn" {
 }
 
 variable "redis_host" {
-  type = string
+  description = "Redis endpoint, or \"\" when no Redis is deployed — the backend is then told to skip its Redis health check."
+  type        = string
+  default     = ""
 }
 
 variable "redis_port" {
-  type = number
+  type    = number
+  default = 6379
 }
 
 variable "attachments_bucket_name" {

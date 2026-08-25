@@ -205,6 +205,41 @@ is configured — see below).
 
 ## Day 2
 
+**Turning the environment off between sessions:** this environment costs
+roughly USD 85/month running around the clock, on an account whose Free
+plan is credit-based — idle time burns real credits. Use:
+
+```bash
+./infra/scripts/env.sh down     # scale to zero, stop the database
+./infra/scripts/env.sh up       # back up in ~3 minutes
+./infra/scripts/env.sh status
+```
+
+`down` takes it to about USD 30/month and keeps the ALB's DNS name, the
+database volume, and every configured value, so `up` needs no
+reconfiguration. What it cannot switch off is the ALB (~USD 17/month) and
+the two Elastic IPs attached to it — neither an ALB nor an ElastiCache node
+can be stopped, only destroyed. For a break of more than a week or two,
+`terraform destroy` in `environments/staging` takes it to near zero; the
+cost is a new ALB DNS name and an empty database on the way back up.
+
+AWS restarts a stopped RDS instance by itself after 7 days. Re-run `down`
+if the environment is still idle then.
+
+**Changing a task definition needs an extra step.** Both ECS services
+declare `ignore_changes = [task_definition]` so the deploy pipeline owns
+what image is running. The side effect: `terraform apply` creates a new
+task-definition revision, but the service stays pinned to the old one, and
+`--force-new-deployment` re-pulls that same old revision. After changing
+container environment variables, secrets, CPU, or memory, move the service
+across explicitly:
+
+```bash
+aws ecs update-service --cluster eudext-erp-staging \
+  --service eudext-erp-staging-backend \
+  --task-definition eudext-erp-staging-backend   # resolves to the latest revision
+```
+
 **Applying infrastructure changes:** there is no CI for Terraform — edit
 the code, then plan and apply it yourself:
 

@@ -119,6 +119,26 @@ resource "aws_iam_role_policy" "backend_s3" {
   policy = data.aws_iam_policy_document.backend_s3.json
 }
 
+locals {
+  # With no Redis deployed, the backend must also be told not to health-check
+  # it: spring-boot-starter-data-redis is on the classpath, so its health
+  # indicator would report DOWN, the ALB would fail the task, and ECS would
+  # replace it forever. Spring's relaxed binding maps this env var onto
+  # `management.health.redis.enabled`.
+  backend_environment = concat(
+    [
+      { name = "AWS_REGION", value = var.aws_region },
+      { name = "ATTACHMENTS_BUCKET", value = var.attachments_bucket_name },
+    ],
+    var.redis_host == "" ? [
+      { name = "MANAGEMENT_HEALTH_REDIS_ENABLED", value = "false" },
+      ] : [
+      { name = "REDIS_HOST", value = var.redis_host },
+      { name = "REDIS_PORT", value = tostring(var.redis_port) },
+    ]
+  )
+}
+
 # ---------------------------------------------------------------------------
 # Logs
 # ---------------------------------------------------------------------------
@@ -156,12 +176,7 @@ resource "aws_ecs_task_definition" "backend" {
       portMappings = [
         { containerPort = 8080, protocol = "tcp" }
       ]
-      environment = [
-        { name = "REDIS_HOST", value = var.redis_host },
-        { name = "REDIS_PORT", value = tostring(var.redis_port) },
-        { name = "AWS_REGION", value = var.aws_region },
-        { name = "ATTACHMENTS_BUCKET", value = var.attachments_bucket_name },
-      ]
+      environment = local.backend_environment
       secrets = [
         { name = "DB_URL", valueFrom = "${var.db_secret_arn}:url::" },
         { name = "DB_USERNAME", valueFrom = "${var.db_secret_arn}:username::" },

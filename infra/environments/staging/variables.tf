@@ -57,6 +57,17 @@ variable "enable_nat_gateway" {
   default     = false
 }
 
+variable "enable_redis" {
+  description = <<-EOT
+    Deploy ElastiCache. Off by default: it costs about USD 15/month and no
+    application code reads from it yet — only the test suite, which uses its
+    own Testcontainers Redis. Turn it on in the same change that introduces
+    the first real use.
+  EOT
+  type        = bool
+  default     = false
+}
+
 variable "rds_instance_class" {
   type    = string
   default = "db.t4g.micro"

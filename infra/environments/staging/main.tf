@@ -51,6 +51,7 @@ module "rds" {
 
 module "redis" {
   source = "../../modules/redis"
+  count  = var.enable_redis ? 1 : 0
 
   project                 = var.project
   environment             = var.environment
@@ -88,8 +89,11 @@ module "ecs" {
   frontend_desired_count = var.frontend_desired_count
 
   db_secret_arn = module.rds.secret_arn
-  redis_host    = module.redis.endpoint
-  redis_port    = module.redis.port
+
+  # "" tells the ECS module there is no Redis, and to stop the backend
+  # health-checking one that isn't there.
+  redis_host = var.enable_redis ? module.redis[0].endpoint : ""
+  redis_port = var.enable_redis ? module.redis[0].port : 6379
 
   attachments_bucket_name = module.storage.bucket_name
   attachments_bucket_arn  = module.storage.bucket_arn
