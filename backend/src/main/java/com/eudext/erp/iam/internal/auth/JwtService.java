@@ -28,8 +28,10 @@ public class JwtService {
 
     private static final String CLAIM_TENANT_ID = "tid";
     private static final String CLAIM_PURPOSE = "purpose";
+    private static final String CLAIM_ACTOR = "act";
     private static final String PURPOSE_ACCESS = "access";
     private static final String PURPOSE_MFA = "mfa";
+    private static final String PURPOSE_IMPERSONATION = "impersonation";
     private static final Duration MFA_CHALLENGE_TTL = Duration.ofMinutes(5);
 
     private final SecretKey signingKey;
@@ -55,6 +57,43 @@ public class JwtService {
 
     public Optional<AccessTokenClaims> parseMfaChallenge(String token) {
         return parse(token, PURPOSE_MFA);
+    }
+
+    /**
+     * ADM-7: a time-boxed token letting {@code actorUserId} (a platform or
+     * brand admin) act as {@code targetUserId} within {@code
+     * targetTenantId}. Carries an extra {@code act} claim naming the real
+     * admin so {@link #parseImpersonationToken} can hand it back to the
+     * caller for audit tagging — the {@code sub}/{@code tid} claims stay
+     * the target's, so every ordinary permission check downstream sees
+     * exactly what it would for a real login as that user.
+     */
+    public String issueImpersonationToken(UUID actorUserId, UUID targetUserId, UUID targetTenantId, Duration ttl) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .subject(targetUserId.toString())
+                .claim(CLAIM_TENANT_ID, targetTenantId.toString())
+                .claim(CLAIM_PURPOSE, PURPOSE_IMPERSONATION)
+                .claim(CLAIM_ACTOR, actorUserId.toString())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(ttl)))
+                .signWith(signingKey)
+                .compact();
+    }
+
+    public Optional<ImpersonationClaims> parseImpersonationToken(String token) {
+        try {
+            Claims claims = Jwts.parser().verifyWith(signingKey).build().parseSignedClaims(token).getPayload();
+            if (!PURPOSE_IMPERSONATION.equals(claims.get(CLAIM_PURPOSE, String.class))) {
+                return Optional.empty();
+            }
+            UUID targetUserId = UUID.fromString(claims.getSubject());
+            UUID targetTenantId = UUID.fromString(claims.get(CLAIM_TENANT_ID, String.class));
+            UUID actorUserId = UUID.fromString(claims.get(CLAIM_ACTOR, String.class));
+            return Optional.of(new ImpersonationClaims(actorUserId, targetUserId, targetTenantId));
+        } catch (JwtException | IllegalArgumentException e) {
+            return Optional.empty();
+        }
     }
 
     private String issue(UUID userId, UUID tenantId, String purpose, Duration ttl) {
@@ -84,4 +123,6 @@ public class JwtService {
     }
 
     public record AccessTokenClaims(UUID userId, UUID tenantId) {}
+
+    public record ImpersonationClaims(UUID actorUserId, UUID targetUserId, UUID targetTenantId) {}
 }

@@ -12,4 +12,6 @@ public interface UserCompanyRoleRepository extends JpaRepository<UserCompanyRole
     List<UserCompanyRole> findByUserId(UUID userId);
 
     Optional<UserCompanyRole> findByUserIdAndCompanyIdAndRoleId(UUID userId, UUID companyId, UUID roleId);
+
+    boolean existsByCompanyIdAndRoleIdIn(UUID companyId, List<UUID> roleIds);
 }
