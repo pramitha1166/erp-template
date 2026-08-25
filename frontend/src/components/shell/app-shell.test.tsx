@@ -1,8 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "./app-shell";
+
+// The header's session menu (F0.2.1) reads `next/navigation`'s router for
+// sign-out — outside a real Next.js app router tree that throws, so stub it.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), forward: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }),
+}));
 
 describe("AppShell", () => {
   it("renders the header and the primary nav", () => {
