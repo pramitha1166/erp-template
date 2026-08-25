@@ -19,4 +19,8 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Statutory" },
   { label: "Banking" },
   { label: "Master Data" },
+  // IAM isn't a business module, but F0.2.5/F0.2.7 land its admin screens
+  // here rather than inventing a second nav surface just for them.
+  { label: "Roles & Permissions", href: "/admin/roles" },
+  { label: "SoD Rules", href: "/admin/sod-rules" },
 ];
