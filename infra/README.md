@@ -45,13 +45,15 @@ AWS CodePipeline
         │                   → ecs update-service --force-new-deployment
         │                   → ecs wait services-stable
         └─ frontend project → (same, for the frontend image/service)
+             each ends by reporting success/failure to GitHub Deployments
 ```
 
-GitHub Actions is **not involved in build or deploy at all** — CodePipeline
-watches the repo directly. GitHub Actions (`.github/workflows/ci.yml`)
-still runs backend/frontend tests and lint as PR status checks, since that
-gates code review and CodePipeline has no equivalent hook into PRs; it has
-nothing to do with what gets deployed.
+There are no GitHub Actions workflows in this repo at all — CodePipeline
+watches GitHub directly, and tests are run locally before pushing (see the
+root `CLAUDE.md`). What GitHub does get back is the *result*: each
+CodeBuild project posts to the repo's Deployments API when it finishes, so
+a deploy appears on the commit and under the repo's **Environments** tab,
+linking to both the running app and the build log.
 
 *Infrastructure* changes (this Terraform code, including the pipeline
 itself) are applied by hand, from a workstation with AWS credentials — see
@@ -143,9 +145,28 @@ terraform apply
 This creates the VPC, RDS, Redis, ALB, ECS cluster/services, CodeBuild
 projects, the CodePipeline itself, and empty ECR repositories. **The ECS
 services will sit in a pending/failing state, and the GitHub connection
-will be unusable, until step 3** — that's expected, not a bug.
+will be unusable, until step 4** — that's expected, not a bug.
 
-### 3. Authorize the GitHub connection (the one unavoidable manual step)
+### 3. Store a GitHub deployment token (optional)
+
+Deploys report their outcome back to GitHub, which needs a token. Create a
+fine-grained personal access token scoped to this repository with
+**Read and write** access to *Deployments*, then store it in the secret
+Terraform created for it:
+
+```bash
+aws secretsmanager put-secret-value \
+  --secret-id "$(terraform -chdir=environments/staging output -raw github_deployment_token_secret_arn)" \
+  --secret-string "ghp_your_token_here"
+```
+
+Terraform creates the secret but never its value — a token in Terraform
+would sit in plaintext in the state file. Until you store one, every
+deploy still works and `infra/scripts/github-deployment-status.sh` simply
+logs that it is skipping. Set `enable_github_deployment_status = false` on
+the codebuild module if you don't want the reporting at all.
+
+### 4. Authorize the GitHub connection (the one unavoidable manual step)
 
 `terraform apply` creates the CodeStar GitHub connection in `PENDING`
 status — completing it requires a signed-in human clicking through GitHub's
@@ -169,7 +190,7 @@ aws codestar-connections get-connection \
   --query 'Connection.ConnectionStatus'
 ```
 
-### 4. First deploy
+### 5. First deploy
 
 Once the connection is `Available`, push to
 `claude/srs-review-breakdown-49ecvy` (or just re-run the pipeline manually

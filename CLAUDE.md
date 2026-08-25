@@ -61,8 +61,9 @@ never work around them "for now":
 - Tests land in the same PR as the code, not deferred to a later pass —
   the exception is the cross-cutting audits that Phase 6 explicitly owns.
 - Before opening or updating a PR: run the backend test suite, ArchUnit,
-  and the coverage check locally. A red CI run on a PR you opened is yours
-  to fix before asking for review.
+  and the coverage check locally. **There is no CI running them for you** —
+  the only automated pipeline is the AWS one that builds and deploys, and
+  it does not run tests. An unrun suite is an unverified change.
 - Don't build ahead of the phase gate: e.g. Finance-module code (Phase 1)
   should depend on Inventory (Phase 2) only through the stock-hook
   interface point implied by FIN-8, never by assuming Phase 2 tables exist.
@@ -86,9 +87,8 @@ never work around them "for now":
   (see `docker-compose.yml` or the `backend` CI job).
 - `mvn org.owasp:dependency-check-maven:13.0.0:check -DfailBuildOnCVSS=7
   -DnvdApiKey=$NVD_API_KEY` — dependency CVE scan (NFR-S3). Add an
-  `NVD_API_KEY` repository secret to activate this in CI (see
-  `.github/workflows/ci.yml`); without it the CI step is skipped rather
-  than silently passing.
+  `NVD_API_KEY` from https://nvd.nist.gov/developers/request-an-api-key to
+  run this at a usable speed.
 
 ### Frontend (`frontend/`, npm)
 
@@ -104,25 +104,18 @@ never work around them "for now":
 - `docker compose up` — Postgres 16, Redis, MinIO, backend, frontend
   (NFR-D1).
 
-### CI
-
-`.github/workflows/ci.yml` runs the `backend` and `frontend` jobs above on
-every push/PR to `claude/srs-review-breakdown-49ecvy` (the repo's
-integration branch — there is currently no `main`). A red run on a PR you
-opened is yours to fix before asking for review.
-
 ### Infrastructure & deployment (AWS)
 
 `infra/` — Terraform for the `staging` AWS environment (ECS Fargate, RDS,
 ElastiCache, ALB, S3, ECR). Two separate pipelines, deliberately not one:
-`.github/workflows/terraform.yml` plans/applies *infrastructure* changes
-(gated by the `staging` GitHub Environment, authenticated via GitHub
-OIDC — no AWS access keys anywhere; runs on merge to
-`claude/srs-review-breakdown-49ecvy`, the repo's integration branch — there
-is currently no `main`), while an **AWS CodePipeline**
-(`infra/modules/codepipeline`, Terraform-managed) builds and deploys the
-*application* directly from GitHub via a CodeStar connection — no GitHub
-Actions involvement in builds or deploys at all. See `infra/README.md` for
-the one-time bootstrap, the one manual step (authorizing the GitHub
-connection), and day-2 operations (custom domain, rollback, scaling toward
+There are **no GitHub Actions workflows** — the repo deliberately has none.
+Infrastructure changes are planned and applied by hand from a workstation
+(`cd infra/environments/staging && terraform plan`), while an **AWS
+CodePipeline** (`infra/modules/codepipeline`, Terraform-managed) builds and
+deploys the *application* straight from GitHub via a CodeStar connection.
+Each CodeBuild project reports its outcome back to the repo's Deployments
+API, so a successful deploy shows up on the commit and under the repo's
+Environments tab. See `infra/README.md` for the one-time bootstrap, the
+manual steps (authorizing the GitHub connection, storing the deployment
+token), and day-2 operations (custom domain, rollback, scaling toward
 production).

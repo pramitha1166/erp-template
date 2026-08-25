@@ -63,6 +63,16 @@ data "aws_iam_policy_document" "codebuild" {
     ]
   }
 
+  dynamic "statement" {
+    for_each = aws_secretsmanager_secret.github_token
+    content {
+      sid       = "ReadGithubToken"
+      effect    = "Allow"
+      actions   = ["secretsmanager:GetSecretValue"]
+      resources = [statement.value.arn]
+    }
+  }
+
   statement {
     sid    = "Logs"
     effect = "Allow"
@@ -79,6 +89,21 @@ resource "aws_iam_role_policy" "codebuild" {
   name   = "${local.name}-codebuild"
   role   = aws_iam_role.codebuild.id
   policy = data.aws_iam_policy_document.codebuild.json
+}
+
+# ---------------------------------------------------------------------------
+# GitHub deployment status. Terraform creates the secret but never its
+# value — storing a GitHub token in Terraform would put it in plaintext in
+# the state file. Put the token in by hand, once (see infra/README.md);
+# until then the reporting script skips quietly and deploys still work.
+# ---------------------------------------------------------------------------
+
+resource "aws_secretsmanager_secret" "github_token" {
+  count                   = var.enable_github_deployment_status ? 1 : 0
+  name                    = "${local.name}/github-deployment-token"
+  description             = "GitHub token with `deployments: write`, used to report deploy status back to the repo."
+  recovery_window_in_days = 0
+  tags                    = local.common_tags
 }
 
 # ---------------------------------------------------------------------------
@@ -139,6 +164,29 @@ resource "aws_codebuild_project" "this" {
     environment_variable {
       name  = "SERVICE_NAME"
       value = each.value.ecs_service_name
+    }
+    environment_variable {
+      name  = "APP_NAME"
+      value = each.key
+    }
+    environment_variable {
+      name  = "ENVIRONMENT_NAME"
+      value = var.environment
+    }
+    environment_variable {
+      name  = "APP_BASE_URL"
+      value = var.app_base_url
+    }
+    environment_variable {
+      name  = "GITHUB_REPO"
+      value = var.github_repo
+    }
+    # The ARN, not the token: the buildspec reads the value at run time, so
+    # an unconfigured secret degrades to "no status reported" instead of
+    # failing every build the way a SECRETS_MANAGER-typed variable would.
+    environment_variable {
+      name  = "GITHUB_TOKEN_SECRET_ARN"
+      value = try(aws_secretsmanager_secret.github_token[0].arn, "")
     }
   }
 

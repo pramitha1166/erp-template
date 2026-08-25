@@ -27,3 +27,25 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "github_repo" {
+  description = "Repository the deploy reports status to, as \"owner/repo\"."
+  type        = string
+  default     = ""
+}
+
+variable "app_base_url" {
+  description = "Public URL of the deployed environment, linked from the GitHub deployment record."
+  type        = string
+  default     = ""
+}
+
+variable "enable_github_deployment_status" {
+  description = <<-EOT
+    Create the Secrets Manager secret holding a GitHub token and let each
+    build report its outcome to the repo's Deployments API. The secret is
+    created empty; deploys work normally until a token is stored in it.
+  EOT
+  type        = bool
+  default     = true
+}

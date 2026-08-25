@@ -102,6 +102,8 @@ module "codebuild" {
   environment      = var.environment
   aws_region       = var.aws_region
   ecs_cluster_name = module.ecs.cluster_name
+  github_repo      = var.github_repo
+  app_base_url     = "http://${module.alb.dns_name}"
 
   apps = {
     backend = {

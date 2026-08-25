@@ -43,3 +43,8 @@ output "codepipeline_connection_status" {
 output "codepipeline_name" {
   value = module.codepipeline.pipeline_name
 }
+
+output "github_deployment_token_secret_arn" {
+  description = "Store a GitHub token with `deployments: write` here to get deploy status reported on the repo."
+  value       = module.codebuild.github_token_secret_arn
+}
