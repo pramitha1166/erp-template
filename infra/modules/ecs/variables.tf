@@ -86,6 +86,18 @@ variable "frontend_desired_count" {
   default = 1
 }
 
+variable "backend_health_check_grace_seconds" {
+  description = "How long after a task starts before failed ALB health checks can kill it. Must exceed the app's cold-start time, measured at ~55s."
+  type        = number
+  default     = 180
+}
+
+variable "frontend_health_check_grace_seconds" {
+  description = "As above, for the Next.js server — it serves almost immediately, so this only absorbs container-start jitter."
+  type        = number
+  default     = 60
+}
+
 variable "log_retention_days" {
   type    = number
   default = 30

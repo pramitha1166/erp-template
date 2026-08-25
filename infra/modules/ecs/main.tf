@@ -188,6 +188,12 @@ resource "aws_ecs_service" "backend" {
   desired_count   = var.backend_desired_count
   launch_type     = "FARGATE"
 
+  # The backend takes ~55s to boot (Spring context + Flyway validation),
+  # longer than the target group's 3 x 15s to declare a target unhealthy.
+  # Without this grace period ECS kills every new task mid-startup and no
+  # deployment ever completes.
+  health_check_grace_period_seconds = var.backend_health_check_grace_seconds
+
   network_configuration {
     subnets          = var.task_subnet_ids
     security_groups  = [aws_security_group.tasks.id]
@@ -255,6 +261,8 @@ resource "aws_ecs_service" "frontend" {
   task_definition = aws_ecs_task_definition.frontend.arn
   desired_count   = var.frontend_desired_count
   launch_type     = "FARGATE"
+
+  health_check_grace_period_seconds = var.frontend_health_check_grace_seconds
 
   network_configuration {
     subnets          = var.task_subnet_ids
