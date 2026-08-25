@@ -8,6 +8,9 @@ WORKDIR /build
 COPY --from=deps /build/node_modules ./node_modules
 COPY . .
 RUN npm run build
+# Next serves static assets from public/, but the directory is optional and
+# absent from this repo — create it so the runtime COPY below always resolves.
+RUN mkdir -p /build/public
 
 FROM node:22-alpine AS runtime
 WORKDIR /app

@@ -14,8 +14,20 @@ variable "vpc_id" {
   type = string
 }
 
-variable "private_subnet_ids" {
-  type = list(string)
+variable "task_subnet_ids" {
+  description = "Subnets the Fargate tasks run in. Private subnets when the VPC has a NAT Gateway; otherwise the public subnets, paired with assign_task_public_ip."
+  type        = list(string)
+}
+
+variable "assign_task_public_ip" {
+  description = <<-EOT
+    Give each task a public IP. Required when the tasks sit in public subnets,
+    because Fargate needs egress to pull images from ECR and read secrets, and
+    without NAT that route only exists via the Internet Gateway. Inbound is
+    still closed: the tasks security group accepts traffic only from the ALB.
+  EOT
+  type        = bool
+  default     = false
 }
 
 variable "alb_security_group_id" {

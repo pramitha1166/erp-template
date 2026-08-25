@@ -53,19 +53,22 @@ still runs backend/frontend tests and lint as PR status checks, since that
 gates code review and CodePipeline has no equivalent hook into PRs; it has
 nothing to do with what gets deployed.
 
-`.github/workflows/terraform.yml` is unrelated to this pipeline — it's how
-*infrastructure* changes (this Terraform code, including the pipeline
-itself) get planned and applied, as opposed to *application* code changes,
-which CodePipeline handles independently once the infrastructure exists.
+*Infrastructure* changes (this Terraform code, including the pipeline
+itself) are applied by hand, from a workstation with AWS credentials — see
+"Applying infrastructure changes" below. There is deliberately no CI
+workflow for Terraform. Application code changes are separate, and
+CodePipeline handles those on its own once the infrastructure exists.
 
 ## Module layout
 
 ```
 infra/
   bootstrap/            One-time, human-run, local state. Creates the
-                         Terraform state bucket and the two GitHub OIDC IAM
-                         roles used only for *infrastructure* changes
-                         (terraform-plan, terraform-apply). Nothing here is
+                         Terraform state bucket. It also defines a GitHub
+                         OIDC provider and two IAM roles (terraform-plan,
+                         terraform-apply) that nothing uses now that
+                         Terraform runs by hand — kept only for re-adding
+                         CI-driven Terraform later. Nothing here is
                          involved in application deploys.
   modules/
     network/             VPC, public+private subnets, IGW, NAT
@@ -88,7 +91,7 @@ infra/
 You need an AWS account with console/CLI access and permission to create
 IAM roles, an OIDC provider, and an S3 bucket.
 
-### 1. Bootstrap the state backend and CI roles
+### 1. Bootstrap the state backend
 
 ```bash
 cd infra/bootstrap
@@ -98,20 +101,22 @@ terraform apply
 
 Review the plan — it creates:
 - An S3 bucket for Terraform remote state (versioned, encrypted, TLS-only).
-- A GitHub Actions OIDC provider trusting `token.actions.githubusercontent.com`.
-- Two IAM roles, used only for *Terraform* changes to this infrastructure
-  (never for application builds/deploys — CodePipeline handles those under
-  its own roles, created directly by Terraform, not via OIDC):
-  - `eudext-erp-gha-terraform-plan` — read-only, any branch/PR.
-  - `eudext-erp-gha-terraform-apply` — can create/modify/destroy the app's
-    AWS footprint, including the CodePipeline/CodeBuild resources
-    themselves. Trusted only for the `staging` GitHub Environment.
+- A GitHub Actions OIDC provider and two IAM roles
+  (`eudext-erp-gha-terraform-plan`, `eudext-erp-gha-terraform-apply`).
+  **Nothing assumes these today** — Terraform is run by hand, and
+  CodePipeline builds/deploys under its own roles created directly by
+  Terraform, not via OIDC. They are kept so CI-driven Terraform can be
+  re-added without redoing the trust-policy work; delete them from
+  `bootstrap/main.tf` and re-apply if you would rather not carry an unused
+  OIDC trust into the account.
 
 > Upgrading from an earlier version of this setup that had a third
-> `gha-app-deploy` role and a `deploy.yml` workflow? Both are gone —
-> deploys now run entirely through CodePipeline. Re-run `terraform apply`
-> here to drop the now-unused role, and delete `APP_DEPLOY_ROLE_ARN` from
-> your repo variables (step 3) if you'd set it.
+> `gha-app-deploy` role and a `deploy.yml` workflow, or a `terraform.yml`
+> workflow? All gone — deploys run entirely through CodePipeline, and
+> Terraform runs by hand. Re-run `terraform apply` here to drop the unused
+> role, and delete the `APP_DEPLOY_ROLE_ARN`, `TF_PLAN_ROLE_ARN`,
+> `TF_APPLY_ROLE_ARN`, and `TF_STATE_BUCKET` repository variables if you
+> had set them.
 
 Keep `infra/bootstrap/terraform.tfstate` somewhere durable (it's not
 secret, but it's the only record of what this stack created) — it is not,
@@ -123,33 +128,9 @@ Note the outputs — you'll need them next:
 terraform output
 ```
 
-### 2. Configure the "staging" GitHub Environment
+### 2. First `terraform apply`
 
-In the repo's Settings → Environments, create an environment named
-`staging`. Add required reviewers if you want a human approval gate before
-`terraform apply` (recommended). This is what the `terraform-apply` role's
-trust policy keys off — without this environment configured, that role
-cannot be assumed at all.
-
-### 3. Set repository variables
-
-Settings → Secrets and variables → Actions → Variables (not secrets — none
-of these are sensitive, they're ARNs and a region):
-
-| Variable | Value |
-|---|---|
-| `AWS_REGION` | `ap-south-1` (or whatever you set `aws_region` to) |
-| `TF_STATE_BUCKET` | `state_bucket` output from step 1 |
-| `TF_PLAN_ROLE_ARN` | `terraform_plan_role_arn` output |
-| `TF_APPLY_ROLE_ARN` | `terraform_apply_role_arn` output |
-
-### 4. First `terraform apply`
-
-Either open a PR touching `infra/` (runs `plan` for review) and merge it —
-`.github/workflows/terraform.yml`'s `apply` job runs on merge to
-`claude/srs-review-breakdown-49ecvy` (the repo's integration branch — there
-is currently no `main`) — or run it yourself once from a machine with your
-AWS credentials:
+Run it from a machine with your AWS credentials:
 
 ```bash
 cd infra/environments/staging
@@ -162,9 +143,9 @@ terraform apply
 This creates the VPC, RDS, Redis, ALB, ECS cluster/services, CodeBuild
 projects, the CodePipeline itself, and empty ECR repositories. **The ECS
 services will sit in a pending/failing state, and the GitHub connection
-will be unusable, until step 5** — that's expected, not a bug.
+will be unusable, until step 3** — that's expected, not a bug.
 
-### 5. Authorize the GitHub connection (the one unavoidable manual step)
+### 3. Authorize the GitHub connection (the one unavoidable manual step)
 
 `terraform apply` creates the CodeStar GitHub connection in `PENDING`
 status — completing it requires a signed-in human clicking through GitHub's
@@ -188,7 +169,7 @@ aws codestar-connections get-connection \
   --query 'Connection.ConnectionStatus'
 ```
 
-### 6. First deploy
+### 4. First deploy
 
 Once the connection is `Available`, push to
 `claude/srs-review-breakdown-49ecvy` (or just re-run the pipeline manually
@@ -202,6 +183,21 @@ Find the app at the `alb_dns_name` output (plain HTTP until a certificate
 is configured — see below).
 
 ## Day 2
+
+**Applying infrastructure changes:** there is no CI for Terraform — edit
+the code, then plan and apply it yourself:
+
+```bash
+cd infra/environments/staging
+terraform plan      # always read this before applying
+terraform apply
+```
+
+State lives in the shared S3 bucket with `use_lockfile=true`, so a
+concurrent apply from somewhere else is blocked rather than racing you. Do
+commit the code you applied: the bucket records what the account looks
+like, not why, and with no CI plan on PRs the diff in git is the only
+review this infrastructure gets.
 
 **Adding a custom domain + HTTPS (BRD-4):** request/import a certificate
 in ACM for the domain, point a Route 53 (or your DNS provider's) record at
@@ -232,7 +228,7 @@ aws codepipeline start-pipeline-execution --name eudext-erp-staging
 module, move to one NAT gateway per AZ (`single_nat_gateway = false` on
 the network module), add a second environment under
 `infra/environments/` (e.g. `production/`) with its own state key, its own
-`production` GitHub Environment/IAM role trust, and its own CodePipeline
+`production` state key and its own CodePipeline
 (pointed at a `production` branch or tag pattern), and consider Multi-AZ
 ElastiCache with automatic failover. None of this is wired up yet — it
 was explicitly out of scope for the first cut (see the conversation that

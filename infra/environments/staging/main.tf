@@ -3,6 +3,8 @@ module "network" {
 
   project     = var.project
   environment = var.environment
+
+  enable_nat_gateway = var.enable_nat_gateway
 }
 
 module "ecr" {
@@ -32,29 +34,30 @@ module "alb" {
 module "rds" {
   source = "../../modules/rds"
 
-  project            = var.project
-  environment        = var.environment
-  vpc_id             = module.network.vpc_id
-  private_subnet_ids = module.network.private_subnet_ids
-  instance_class     = var.rds_instance_class
+  project               = var.project
+  environment           = var.environment
+  vpc_id                = module.network.vpc_id
+  private_subnet_ids    = module.network.private_subnet_ids
+  instance_class        = var.rds_instance_class
+  backup_retention_days = var.rds_backup_retention_days
 
   # Not a cycle despite module.ecs also depending on module.rds below:
   # Terraform's dependency graph is per-resource, not per-module. This SG
   # ingress rule depends only on the ECS tasks security group *resource*
   # (created with no inputs of its own); the RDS instance and its secret
   # depend only on this module's own SG, never on anything in module.ecs.
-  allowed_security_group_ids = [module.ecs.tasks_security_group_id]
+  allowed_security_groups = { ecs_tasks = module.ecs.tasks_security_group_id }
 }
 
 module "redis" {
   source = "../../modules/redis"
 
-  project                    = var.project
-  environment                = var.environment
-  vpc_id                     = module.network.vpc_id
-  private_subnet_ids         = module.network.private_subnet_ids
-  node_type                  = var.redis_node_type
-  allowed_security_group_ids = [module.ecs.tasks_security_group_id]
+  project                 = var.project
+  environment             = var.environment
+  vpc_id                  = module.network.vpc_id
+  private_subnet_ids      = module.network.private_subnet_ids
+  node_type               = var.redis_node_type
+  allowed_security_groups = { ecs_tasks = module.ecs.tasks_security_group_id }
 }
 
 module "ecs" {
@@ -64,8 +67,13 @@ module "ecs" {
   environment = var.environment
   aws_region  = var.aws_region
 
-  vpc_id             = module.network.vpc_id
-  private_subnet_ids = module.network.private_subnet_ids
+  vpc_id = module.network.vpc_id
+
+  # Without a NAT Gateway the private subnets have no egress, so the tasks run
+  # in the public subnets with a public IP instead. Their security group still
+  # admits nothing but the ALB either way.
+  task_subnet_ids       = var.enable_nat_gateway ? module.network.private_subnet_ids : module.network.public_subnet_ids
+  assign_task_public_ip = !var.enable_nat_gateway
 
   alb_security_group_id     = module.alb.security_group_id
   alb_listener_arn          = module.alb.listener_arn

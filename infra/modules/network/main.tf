@@ -1,6 +1,16 @@
 locals {
   name = "${var.project}-${var.environment}"
 
+  # Zero NAT Gateways means zero Elastic IPs — both are billed hourly and
+  # neither is covered by the AWS free tier. Private subnets then have no
+  # route to the internet, so anything needing egress (the ECS tasks) must
+  # run in the public subnets instead; see var.enable_nat_gateway.
+  nat_count = var.enable_nat_gateway ? (var.single_nat_gateway ? 1 : var.az_count) : 0
+
+  # The private route tables exist either way — without NAT they simply carry
+  # no default route, keeping the subnets private but reachable in-VPC.
+  private_route_table_count = var.single_nat_gateway ? 1 : var.az_count
+
   common_tags = merge(var.tags, {
     Project     = var.project
     Environment = var.environment
@@ -51,13 +61,13 @@ resource "aws_subnet" "private" {
 }
 
 resource "aws_eip" "nat" {
-  count  = var.single_nat_gateway ? 1 : var.az_count
+  count  = local.nat_count
   domain = "vpc"
   tags   = merge(local.common_tags, { Name = "${local.name}-nat-${count.index}" })
 }
 
 resource "aws_nat_gateway" "this" {
-  count         = var.single_nat_gateway ? 1 : var.az_count
+  count         = local.nat_count
   allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
 
@@ -84,13 +94,13 @@ resource "aws_route_table_association" "public" {
 }
 
 resource "aws_route_table" "private" {
-  count  = var.single_nat_gateway ? 1 : var.az_count
+  count  = local.private_route_table_count
   vpc_id = aws_vpc.this.id
   tags   = merge(local.common_tags, { Name = "${local.name}-private-${count.index}" })
 }
 
 resource "aws_route" "private_nat" {
-  count                  = var.single_nat_gateway ? 1 : var.az_count
+  count                  = local.nat_count
   route_table_id         = aws_route_table.private[count.index].id
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = aws_nat_gateway.this[count.index].id

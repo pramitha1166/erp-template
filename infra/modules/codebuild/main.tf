@@ -129,8 +129,8 @@ resource "aws_codebuild_project" "this" {
     }
     environment_variable {
       name = "IMAGE_REPO_NAME"
-      # A single capture group makes `regex` return the substring directly.
-      value = regex("/([^/]+)$", each.value.ecr_repository_url)
+      # The repository name is the last path segment of the ECR URL.
+      value = reverse(split("/", each.value.ecr_repository_url))[0]
     }
     environment_variable {
       name  = "CLUSTER_NAME"

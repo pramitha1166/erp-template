@@ -14,9 +14,13 @@ variable "private_subnet_ids" {
   type = list(string)
 }
 
-variable "allowed_security_group_ids" {
-  description = "Security groups (e.g. the ECS tasks SG) allowed to connect to Postgres on 5432."
-  type        = list(string)
+variable "allowed_security_groups" {
+  description = <<-EOT
+    Security groups allowed to connect to Postgres on 5432, keyed by a static
+    name (e.g. `ecs_tasks`). A map rather than a list because the IDs are only
+    known after apply, and `for_each` needs keys that are known at plan time.
+  EOT
+  type        = map(string)
 }
 
 variable "instance_class" {

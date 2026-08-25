@@ -17,7 +17,7 @@ resource "aws_security_group" "rds" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "postgres_from_app" {
-  for_each                     = toset(var.allowed_security_group_ids)
+  for_each                     = var.allowed_security_groups
   security_group_id            = aws_security_group.rds.id
   referenced_security_group_id = each.value
   from_port                    = 5432

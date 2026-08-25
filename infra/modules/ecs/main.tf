@@ -15,7 +15,9 @@ resource "aws_ecs_cluster" "this" {
 }
 
 # ---------------------------------------------------------------------------
-# Networking: tasks run in private subnets, reachable only from the ALB.
+# Networking: whichever subnets they run in, tasks accept traffic only from
+# the ALB security group — the ingress rules below are what makes them
+# unreachable from the internet, not the subnet they sit in.
 # ---------------------------------------------------------------------------
 
 resource "aws_security_group" "tasks" {
@@ -187,8 +189,9 @@ resource "aws_ecs_service" "backend" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [aws_security_group.tasks.id]
+    subnets          = var.task_subnet_ids
+    security_groups  = [aws_security_group.tasks.id]
+    assign_public_ip = var.assign_task_public_ip
   }
 
   load_balancer {
@@ -254,8 +257,9 @@ resource "aws_ecs_service" "frontend" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [aws_security_group.tasks.id]
+    subnets          = var.task_subnet_ids
+    security_groups  = [aws_security_group.tasks.id]
+    assign_public_ip = var.assign_task_public_ip
   }
 
   load_balancer {

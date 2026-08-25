@@ -45,9 +45,32 @@ variable "frontend_image_tag" {
   default = "staging"
 }
 
+variable "enable_nat_gateway" {
+  description = <<-EOT
+    Off by default here: a NAT Gateway plus its Elastic IP costs roughly
+    USD 35/month and is not free-tier eligible. With it off the ECS tasks move
+    into the public subnets with public IPs (inbound still ALB-only), and RDS
+    and Redis stay in the private subnets. Turn it on for production, where
+    tasks belong on private addresses.
+  EOT
+  type        = bool
+  default     = false
+}
+
 variable "rds_instance_class" {
   type    = string
   default = "db.t4g.micro"
+}
+
+variable "rds_backup_retention_days" {
+  description = <<-EOT
+    Automated-backup retention. Defaults to 1 because AWS free-tier accounts
+    reject anything longer (FreeTierRestrictionError on CreateDBInstance).
+    Raise this to 7+ once the account is off the free plan, and before this
+    environment holds data anyone depends on.
+  EOT
+  type        = number
+  default     = 1
 }
 
 variable "redis_node_type" {
