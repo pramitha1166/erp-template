@@ -61,8 +61,9 @@ never work around them "for now":
 - Tests land in the same PR as the code, not deferred to a later pass —
   the exception is the cross-cutting audits that Phase 6 explicitly owns.
 - Before opening or updating a PR: run the backend test suite, ArchUnit,
-  and the coverage check locally. A red CI run on a PR you opened is yours
-  to fix before asking for review.
+  and the coverage check locally. **There is no CI running them for you** —
+  the only automated pipeline is the AWS one that builds and deploys, and
+  it does not run tests. An unrun suite is an unverified change.
 - Don't build ahead of the phase gate: e.g. Finance-module code (Phase 1)
   should depend on Inventory (Phase 2) only through the stock-hook
   interface point implied by FIN-8, never by assuming Phase 2 tables exist.
@@ -71,6 +72,50 @@ never work around them "for now":
 
 ## Commands
 
-To be filled in once Epic 0.0 (repository & CI/CD bootstrap) lands — that
-PR should update this section with the actual build/test/lint commands for
-`backend/` and `frontend/`.
+### Backend (`backend/`, Maven)
+
+- `mvn compile` — compile only.
+- `mvn test` — unit tests, ArchUnit module-boundary rules (ARCH-1), the
+  ARCH-5 double/float ban, and Spring Modulith verification. No Docker
+  required.
+- `mvn verify` — everything in `test` plus Testcontainers integration tests
+  (`*IT.java`, NFR-M2) and the statutory-package JaCoCo coverage gate
+  (100% branch coverage, SRS §4.6 — a hard CI gate). Requires Docker.
+- `mvn -Popenapi verify -DskipTests` — boots the app against a real
+  Postgres and writes `target/openapi.yaml` (NFR-M4). Needs
+  `DB_URL`/`DB_USERNAME`/`DB_PASSWORD` pointing at a reachable Postgres
+  (see `docker-compose.yml` or the `backend` CI job).
+- `mvn org.owasp:dependency-check-maven:13.0.0:check -DfailBuildOnCVSS=7
+  -DnvdApiKey=$NVD_API_KEY` — dependency CVE scan (NFR-S3). Add an
+  `NVD_API_KEY` from https://nvd.nist.gov/developers/request-an-api-key to
+  run this at a usable speed.
+
+### Frontend (`frontend/`, npm)
+
+- `npm run dev` — local dev server.
+- `npm run lint` — ESLint.
+- `npm run typecheck` — `tsc --noEmit`.
+- `npm run build` — production build.
+- `npm run audit:ci` — dependency CVE scan (NFR-S3), gated by
+  `audit-ci.jsonc`'s documented allowlist.
+
+### Local stack
+
+- `docker compose up` — Postgres 16, Redis, MinIO, backend, frontend
+  (NFR-D1).
+
+### Infrastructure & deployment (AWS)
+
+`infra/` — Terraform for the `staging` AWS environment (ECS Fargate, RDS,
+ElastiCache, ALB, S3, ECR). Two separate pipelines, deliberately not one:
+There are **no GitHub Actions workflows** — the repo deliberately has none.
+Infrastructure changes are planned and applied by hand from a workstation
+(`cd infra/environments/staging && terraform plan`), while an **AWS
+CodePipeline** (`infra/modules/codepipeline`, Terraform-managed) builds and
+deploys the *application* straight from GitHub via a CodeStar connection.
+Each CodeBuild project reports its outcome back to the repo's Deployments
+API, so a successful deploy shows up on the commit and under the repo's
+Environments tab. See `infra/README.md` for the one-time bootstrap, the
+manual steps (authorizing the GitHub connection, storing the deployment
+token), and day-2 operations (custom domain, rollback, scaling toward
+production).

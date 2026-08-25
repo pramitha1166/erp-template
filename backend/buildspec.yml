@@ -1,0 +1,32 @@
+version: 0.2
+
+# Runs inside AWS CodeBuild, invoked as a Build action by the CodePipeline
+# defined in infra/modules/codepipeline (Source: this GitHub repo, via a
+# CodeStar connection). CodePipeline hands the project a checkout of the
+# whole repo, so all commands below operate relative to the repo root
+# until the explicit `cd backend`. Not used locally — see backend/Dockerfile
+# for that.
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to ECR..."
+      - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+  build:
+    commands:
+      - cd backend
+      - echo "Building backend image $ECR_REGISTRY/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION..."
+      - docker build -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION" -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:staging" .
+  post_build:
+    commands:
+      - echo "Pushing images..."
+      - docker push "$ECR_REGISTRY/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION"
+      - docker push "$ECR_REGISTRY/$IMAGE_REPO_NAME:staging"
+      - echo "Rolling ECS deployment..."
+      - aws ecs update-service --cluster "$CLUSTER_NAME" --service "$SERVICE_NAME" --force-new-deployment
+      - aws ecs wait services-stable --cluster "$CLUSTER_NAME" --services "$SERVICE_NAME"
+    # `finally` runs even when a command above failed, so GitHub hears about
+    # a broken deploy as well as a good one. The script is deliberately
+    # incapable of failing the build.
+    finally:
+      - bash "$CODEBUILD_SRC_DIR/infra/scripts/github-deployment-status.sh"
