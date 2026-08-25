@@ -23,4 +23,5 @@ export const NAV_ITEMS: NavItem[] = [
   // here rather than inventing a second nav surface just for them.
   { label: "Roles & Permissions", href: "/admin/roles" },
   { label: "SoD Rules", href: "/admin/sod-rules" },
+  { label: "Audit Log", href: "/admin/audit-log" },
 ];
