@@ -16,3 +16,8 @@ output "github_token_secret_arn" {
   description = "Secret to store a GitHub `deployments: write` token in; empty when status reporting is disabled."
   value       = try(aws_secretsmanager_secret.github_token[0].arn, "")
 }
+
+output "ddns_secret_arn" {
+  description = "Secret holding the dynamic-DNS token and hostnames."
+  value       = aws_secretsmanager_secret.ddns.arn
+}

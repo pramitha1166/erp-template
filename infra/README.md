@@ -222,8 +222,34 @@ addresses. `down` reverses it: about **USD 60/month while up, USD 5/month
 while down** — the residue is the stopped database's disk, two secrets, the
 pipeline, and stored images.
 
-Because there is no load balancer, **the addresses change every time a task
-starts**. Take them from `up` or `status`; don't bookmark them.
+Because there is no load balancer, **the raw addresses change every time a
+task starts**. Give the environment stable hostnames instead — free, and
+updated automatically after every deploy and every `up`:
+
+1. Sign in at https://www.duckdns.org (GitHub/Google, no cost) and create
+   two subdomains, e.g. `eudext-erp` and `eudext-erp-api`. Copy the token
+   shown at the top of the page.
+2. Store both in the secret Terraform created:
+
+   ```bash
+   aws secretsmanager put-secret-value \
+     --secret-id "$(terraform -chdir=environments/staging output -raw ddns_secret_arn)" \
+     --secret-string '{"provider":"duckdns","token":"YOUR-TOKEN","app":"eudext-erp","api":"eudext-erp-api"}'
+   ```
+
+3. `./infra/scripts/env.sh up` — or any deploy — now republishes the
+   records, and `status` prints the hostnames first:
+
+   ```
+   app:  http://eudext-erp.duckdns.org:3000
+   api:  http://eudext-erp-api.duckdns.org:8080/api
+   ```
+
+Change a hostname by rewriting the secret; nothing needs redeploying. Until
+the secret holds a token, `infra/scripts/update-dns.sh` skips quietly and
+you work from the raw IPs. Note there is still no TLS — DuckDNS gives a
+name, not a certificate. HTTPS needs `enable_alb = true` and an ACM
+certificate, or a Cloudflare Tunnel in front.
 
 Two things that would otherwise surprise you:
 

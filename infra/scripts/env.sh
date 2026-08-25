@@ -52,7 +52,30 @@ task_ip() {
     --query 'NetworkInterfaces[0].Association.PublicIp' --output text
 }
 
+# Stable hostnames, when the DDNS secret is configured — these survive the
+# task IPs changing, so they are the addresses worth keeping.
+ddns_hosts() {
+  local config
+  # Non-zero means "nothing published" — the secret is absent or still empty.
+  config=$(aws secretsmanager get-secret-value --secret-id "${CLUSTER}/ddns" \
+    --query SecretString --output text 2>/dev/null) || return 1
+  { [ -z "$config" ] || [ "$config" = "None" ]; } && return 1
+
+  local app api
+  app=$(printf '%s' "$config" | jq -r '.app // empty' 2>/dev/null)
+  api=$(printf '%s' "$config" | jq -r '.api // empty' 2>/dev/null)
+  [ -n "$app" ] && echo "  app:  http://${app}.duckdns.org:3000"
+  [ -n "$api" ] && {
+    echo "  api:  http://${api}.duckdns.org:8080/api"
+    echo "  docs: http://${api}.duckdns.org:8080/api/swagger-ui.html"
+  }
+  [ -n "$app" ] || [ -n "$api" ]
+}
+
 urls() {
+  if ddns_hosts; then
+    echo "  (raw IPs below — they change on every restart)"
+  fi
   local fe be
   fe=$(task_ip "$FRONTEND" 2>/dev/null || true)
   be=$(task_ip "$BACKEND" 2>/dev/null || true)
@@ -126,6 +149,11 @@ case "${1:-status}" in
 
     echo "Waiting for tasks to go healthy (the backend takes ~1 minute to boot)..."
     aws ecs wait services-stable --cluster "$CLUSTER" --services "$BACKEND" "$FRONTEND"
+
+    # Tasks just started, so their addresses are new — republish before
+    # printing anything, or the hostnames point at the previous run.
+    CLUSTER_NAME="$CLUSTER" AWS_REGION="$REGION" \
+      bash "$(dirname "$0")/update-dns.sh" || true
 
     echo
     echo "Up."

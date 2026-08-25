@@ -29,4 +29,5 @@ phases:
     # a broken deploy as well as a good one. The script is deliberately
     # incapable of failing the build.
     finally:
+      - bash "$CODEBUILD_SRC_DIR/infra/scripts/update-dns.sh"
       - bash "$CODEBUILD_SRC_DIR/infra/scripts/github-deployment-status.sh"

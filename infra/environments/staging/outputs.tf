@@ -48,3 +48,8 @@ output "github_deployment_token_secret_arn" {
   description = "Store a GitHub token with `deployments: write` here to get deploy status reported on the repo."
   value       = module.codebuild.github_token_secret_arn
 }
+
+output "ddns_secret_arn" {
+  description = "Store {\"token\":\"...\",\"app\":\"...\",\"api\":\"...\"} here to give the environment stable hostnames."
+  value       = module.codebuild.ddns_secret_arn
+}
