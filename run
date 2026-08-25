@@ -1,0 +1,15 @@
+App: http://65.1.130.221:3000
+
+API: http://13.233.255.21:8080/api
+
+API docs: http://13.233.255.21:8080/api/swagger-ui.html
+
+Verified just now: the app returns 200 in 66ms, the backend reports {"status":"UP","groups":["liveness","readiness"]}, and Swagger returns a 302 — that's its normal redirect to /api/swagger-ui/index.html, not an error. Follow it in a browser and the page loads.
+
+Frontend and backend are on different IP addresses because they're separate Fargate tasks with no load balancer in front. That's expected here, not a misconfiguration.
+
+Two reminders now that you're using it:
+
+These addresses are valid for this run only. Any deploy, env.sh down/up, or ECS replacing a task gives you new ones — always re-read them from ./infra/scripts/env.sh status.
+
+Run ./infra/scripts/env.sh down when you finish. Left up, this costs about $2/day against your $118.88 of credits.
