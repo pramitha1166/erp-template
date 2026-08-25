@@ -183,6 +183,83 @@ branch-filtered visibility test (0.9.4).
 
 ---
 
+## Frontend Track — Phase 0 (Epics 0.0–0.4)
+
+The original breakdown wove UI work into whichever backend epic owned the
+feature. This section pulls the frontend slice for the five Phase 0 epics
+completed so far (0.0 Bootstrap, 0.1 Document Model, 0.2 IAM, 0.3 Audit,
+0.4 Workflow Engine) into its own explicit track so frontend work can be
+staffed and issued independently of backend progress. Frontend tasks for
+Epics 0.5–0.10 follow the same pattern once those backend epics land.
+
+### Epic F0.0 — Frontend App Shell & Bootstrap
+
+Companion to Epic 0.0. No screens yet — this is the scaffold everything
+else in the frontend track builds on.
+
+| Task | Description | Size |
+|---|---|---|
+| F0.0.1 | Next.js 15 App Router project structure: route groups, layout hierarchy, error/loading boundaries | M |
+| F0.0.2 | TanStack Query client + API client generated from the backend's published OpenAPI spec (consumes 0.0.8) | M |
+| F0.0.3 | Zustand store scaffold for client state (auth/session, active tenant/company context) | S |
+| F0.0.4 | shadcn/ui + Tailwind base install, design tokens wired to CSS custom properties (lays groundwork for Epic 0.8 theming) | M |
+| F0.0.5 | Base app shell: nav frame, header, responsive layout from 360px (NFR-U1) | M |
+| F0.0.6 | Frontend CI job: typecheck (strict TS), lint, unit tests, build — extends 0.0.4 | S |
+
+### Epic F0.1 — Document Lifecycle UI Primitives
+
+Companion to Epic 0.1. Reusable components every later document screen
+(invoices, orders, entries) will be built from — build once here, not
+per-module.
+
+| Task | Description | SRS Ref | Size |
+|---|---|---|---|
+| F0.1.1 | Document status badge + lifecycle action bar (Draft/Submit/Cancel/Amend) as a shared component | ARCH-4 | M |
+| F0.1.2 | Optimistic-lock conflict handling: version-mismatch dialog on stale submit | ARCH-6 | S |
+| F0.1.3 | Generic document list/table view (server-paginated, status filter, sort) for reuse across modules | NFR-P2 | M |
+| F0.1.4 | Inline field-level validation pattern (react-hook-form + Zod) — never a generic failure toast | NFR-U4 | M |
+| F0.1.5 | Tenant/company context indicator in the app shell header | ARCH-2 | S |
+
+### Epic F0.2 — Auth & Access UI
+
+Companion to Epic 0.2. First screens a real user touches.
+
+| Task | Description | SRS Ref | Size |
+|---|---|---|---|
+| F0.2.1 | Login page + rotating-refresh session handling in the API client | IAM-1 | M |
+| F0.2.2 | TOTP 2FA enrollment and verify flow | IAM-2 | M |
+| F0.2.3 | Forgot/reset password flow with live password-policy validation | IAM-9 | M |
+| F0.2.4 | Session management page: active sessions list, force logout | IAM-8 | M |
+| F0.2.5 | Role & permission admin: role CRUD, `module:entity:action` assignment matrix | IAM-3 | L |
+| F0.2.6 | Per-company role switcher (user holds different roles per company) | IAM-4 | S |
+| F0.2.7 | SoD conflict warning surfaced inline during role assignment | IAM-7 | M |
+| F0.2.8 | Field-level permission pattern: masked/hidden field rendering (e.g. salary visible only to HR roles) | IAM-5 | M |
+
+### Epic F0.3 — Audit Trail UI
+
+Companion to Epic 0.3.
+
+| Task | Description | SRS Ref | Size |
+|---|---|---|---|
+| F0.3.1 | Document version history panel with field-level diff, embedded on document detail views | AUD-4 | L |
+| F0.3.2 | Audit log browser/search screen for admins (entity, user, date range, action filters) | AUD-2 | M |
+| F0.3.3 | Retention/archival status indicator on the audit browser (admin-only) | AUD-5 | S |
+
+### Epic F0.4 — Workflow & Approvals UI
+
+Companion to Epic 0.4.
+
+| Task | Description | SRS Ref | Size |
+|---|---|---|---|
+| F0.4.1 | Approval chain configuration screen per document type per company | WF-1 | L |
+| F0.4.2 | Condition builder UI for field-based approval rules (e.g. amount thresholds) | WF-2 | M |
+| F0.4.3 | Pending-approval inbox (dashboard widget + full list view) | WF-8 | M |
+| F0.4.4 | Approve/reject action screen with mandatory comment on rejection | WF-6 | M |
+| F0.4.5 | Delegation setup (date range) and escalation status indicator | WF-5 | M |
+| F0.4.6 | Approval history timeline component embedded on document detail views (shares groundwork with F0.3.1) | WF-7 | M |
+
+---
+
 ## Phase 1 — Finance Core (~3 months)
 
 **Gate:** balanced books on a 3-month simulated dataset, verified by an
