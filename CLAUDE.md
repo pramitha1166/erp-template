@@ -95,9 +95,14 @@ never work around them "for now":
 - `npm run dev` — local dev server.
 - `npm run lint` — ESLint.
 - `npm run typecheck` — `tsc --noEmit`.
+- `npm run test` — unit tests (Vitest + Testing Library).
 - `npm run build` — production build.
 - `npm run audit:ci` — dependency CVE scan (NFR-S3), gated by
   `audit-ci.jsonc`'s documented allowlist.
+- `npm run generate:api` — regenerates `src/lib/api/schema.d.ts` from the
+  backend's published OpenAPI spec (consumes 0.0.8). Run
+  `mvn -Popenapi verify -DskipTests` in `backend/` first, or point
+  `OPENAPI_SPEC` at a running backend's `/v3/api-docs.yaml`.
 
 ### Local stack
 
