@@ -1,5 +1,6 @@
 package com.eudext.erp.iam.internal.session;
 
+import com.eudext.erp.config.audit.NotAudited;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,9 +13,16 @@ import java.util.UUID;
 /**
  * IAM-1 / IAM-8: one row per issued refresh token. See V5 migration
  * comment for why only a hash of the token is stored.
+ *
+ * <p>{@link NotAudited}: session issue/rotate/revoke is high-churn
+ * technical bookkeeping, not transactional or master data (AUD-1), and
+ * IAM-10's login/logout events already give it a semantic audit trail via
+ * {@code AuthAuditEventListener} — a generic row-level entry here would
+ * just be noise.
  */
 @Entity
 @Table(name = "user_sessions")
+@NotAudited
 public class UserSession {
 
     @Id

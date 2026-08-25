@@ -1,5 +1,6 @@
 package com.eudext.erp.iam.internal.user;
 
+import com.eudext.erp.config.audit.AuditRedacted;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -40,6 +41,8 @@ public class User {
     @Column(name = "email", nullable = false, updatable = false)
     private String email;
 
+    /** AUD-2: never let a password hash reach the audit trail, even redacted-by-value elsewhere it must not appear at all. */
+    @AuditRedacted
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
@@ -49,6 +52,8 @@ public class User {
     @Column(name = "password_changed_at", nullable = false)
     private Instant passwordChangedAt;
 
+    /** AUD-2: a TOTP seed is as sensitive as a password — same redaction as {@link #passwordHash}. */
+    @AuditRedacted
     @Column(name = "totp_secret")
     private String totpSecret;
 
