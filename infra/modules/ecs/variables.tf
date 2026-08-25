@@ -140,3 +140,9 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "api_base_url" {
+  description = "Public URL of the backend API. Falls back to public_base_url + /api (the ALB path route) when empty."
+  type        = string
+  default     = ""
+}

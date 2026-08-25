@@ -133,6 +133,8 @@ resource "aws_iam_role_policy" "backend_s3" {
 }
 
 locals {
+  api_base_url = var.api_base_url != "" ? var.api_base_url : "${var.public_base_url}/api"
+
   # With no Redis deployed, the backend must also be told not to health-check
   # it: spring-boot-starter-data-redis is on the classpath, so its health
   # indicator would report DOWN, the ALB would fail the task, and ECS would
@@ -273,7 +275,10 @@ resource "aws_ecs_task_definition" "frontend" {
       ]
       environment = [
         { name = "NODE_ENV", value = "production" },
-        { name = "NEXT_PUBLIC_API_BASE_URL", value = "${var.public_base_url}/api" },
+        # Only reaches server-rendered code: the browser bundle carries the
+        # value baked in at image build. Kept in step with it so the two
+        # halves of the app never disagree about where the API lives.
+        { name = "NEXT_PUBLIC_API_BASE_URL", value = local.api_base_url },
       ]
       logConfiguration = {
         logDriver = "awslogs"

@@ -16,7 +16,7 @@ phases:
     commands:
       - cd frontend
       - echo "Building frontend image $ECR_REGISTRY/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION..."
-      - docker build -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION" -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:staging" .
+      - docker build --build-arg NEXT_PUBLIC_API_BASE_URL="$API_BASE_URL" -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION" -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:staging" .
   post_build:
     commands:
       - echo "Pushing images..."

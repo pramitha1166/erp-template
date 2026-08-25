@@ -211,6 +211,12 @@ resource "aws_codebuild_project" "this" {
       name  = "APP_BASE_URL"
       value = var.app_base_url
     }
+    # Baked into the frontend bundle at image-build time — see
+    # frontend/Dockerfile. Changing it needs a rebuild, not a redeploy.
+    environment_variable {
+      name  = "API_BASE_URL"
+      value = var.api_base_url
+    }
     environment_variable {
       name  = "GITHUB_REPO"
       value = var.github_repo

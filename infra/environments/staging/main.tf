@@ -90,6 +90,8 @@ module "ecs" {
   backend_desired_count  = var.backend_desired_count
   frontend_desired_count = var.frontend_desired_count
 
+  api_base_url = var.public_api_base_url
+
   db_secret_arn = module.rds.secret_arn
 
   # "" tells the ECS module there is no Redis, and to stop the backend
@@ -110,6 +112,7 @@ module "codebuild" {
   ecs_cluster_name = module.ecs.cluster_name
   github_repo      = var.github_repo
   app_base_url     = var.enable_alb ? "http://${module.alb[0].dns_name}" : ""
+  api_base_url     = var.public_api_base_url
 
   apps = {
     backend = {
