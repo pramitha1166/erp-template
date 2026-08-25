@@ -1,5 +1,6 @@
 package com.eudext.erp.iam.internal.password;
 
+import com.eudext.erp.config.audit.NotAudited;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -9,9 +10,18 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-/** IAM-9: insert-only — a user's past password hashes, checked to block reuse. Never updated or pruned. */
+/**
+ * IAM-9: insert-only — a user's past password hashes, checked to block
+ * reuse. Never updated or pruned. {@link NotAudited}: it is itself
+ * effectively an append-only audit record of password changes (AUD-1
+ * already covers {@code User.passwordHash} changes at the field level, via
+ * {@link com.eudext.erp.config.audit.AuditRedacted}), and generically
+ * auditing it would additionally write the very hash material AUD-2
+ * requires keeping out of the audit trail.
+ */
 @Entity
 @Table(name = "password_history")
+@NotAudited
 public class PasswordHistory {
 
     @Id

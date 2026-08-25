@@ -25,6 +25,7 @@
     <springdoc.version>2.9.0</springdoc.version>
     <mapstruct.version>1.6.3</mapstruct.version>
     <jjwt.version>0.12.6</jjwt.version>
+    <aws-sdk.version>2.29.52</aws-sdk.version>
   </properties>
 
   <dependencyManagement>
@@ -40,6 +41,13 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers-bom</artifactId>
         <version>1.20.4</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>bom</artifactId>
+        <version>${aws-sdk.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -132,6 +140,14 @@
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
+
+    <!-- AUD-5: cold-storage archival target. S3-compatible, works against
+         the MinIO instance docker-compose already provisions (NFR-D1) as
+         well as real AWS S3 in staging/production. -->
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
     </dependency>
 
     <!-- DTO mapping -->

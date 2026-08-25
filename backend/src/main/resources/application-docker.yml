@@ -10,3 +10,13 @@ spring:
     redis:
       host: redis
       port: 6379
+
+eudext:
+  audit:
+    archive:
+      # AUD-5: docker-compose's MinIO instance (NFR-D1), reachable from the
+      # backend container by its service name.
+      enabled: true
+      s3-endpoint: http://minio:9000
+      access-key: eudext
+      secret-key: eudext-minio
