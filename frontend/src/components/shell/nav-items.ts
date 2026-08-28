@@ -24,4 +24,14 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Roles & Permissions", href: "/admin/roles" },
   { label: "SoD Rules", href: "/admin/sod-rules" },
   { label: "Audit Log", href: "/admin/audit-log" },
+  { label: "Setup Checklist", href: "/admin/setup-checklist" },
+  // F0.11.1/F0.11.4: platform- and brand-admin consoles are a separate
+  // operator persona from the tenant-scoped items above (ADM-1/ADM-5 design
+  // note) — same flat, unfiltered nav pattern as the rest of this list until
+  // permission-aware nav exists; the backend enforces access either way. A
+  // Brand admin's own console lives at /admin/brands/{brandId}, which this
+  // nav can't link to directly since there's no "my brand" lookup endpoint
+  // yet — they reach it from the link the platform admin gives them, or via
+  // Platform Admin > Brands for platform admins browsing all of them.
+  { label: "Platform Admin", href: "/admin/platform/brands" },
 ];
