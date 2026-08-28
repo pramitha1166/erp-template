@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
 import { Header } from "./header";
 import { Nav } from "./nav";
 
@@ -15,6 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <ImpersonationBanner />
       <Header onToggleNav={() => setNavOpen((open) => !open)} />
       <div className="flex flex-1">
         <Nav open={navOpen} onClose={() => setNavOpen(false)} />
