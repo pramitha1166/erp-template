@@ -5,62 +5,67 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import Link from "next/link";
 
-import { login } from "@/lib/api/auth-api";
+import { adminLogin } from "@/lib/api/auth-api";
 import { ApiError } from "@/lib/api/http";
-import { getLastTenantId, setLastTenantId } from "@/lib/api/tokens";
 import { applySession } from "@/lib/auth/session";
 import { safeNext } from "@/lib/auth/safe-redirect";
 import { setPendingChallenge } from "@/lib/auth/mfa-challenge";
+import { ADMIN_DEFAULT_PATH } from "@/lib/auth/admin-realm";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { ValidatedTextField } from "@/components/form/validated-text-field";
-import Link from "next/link";
 
-const loginSchema = z.object({
-  tenantId: z.uuid("Enter your tenant id (a UUID)"),
+const adminLoginSchema = z.object({
   email: z.email("Enter a valid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
-type LoginValues = z.infer<typeof loginSchema>;
+type AdminLoginValues = z.infer<typeof adminLoginSchema>;
 
-/** IAM-1: email/password login, handing off to `/totp-verify` when the account has 2FA enrolled (IAM-2). */
-function LoginForm() {
+/**
+ * ADM-1 / ADM-5 / F0.11.7: the admin realm's own sign-in screen for
+ * platform and brand admin staff — genuinely separate from `/login`
+ * (F0.2.1), not that page with a hidden or sentinel tenant field (see the
+ * design note on this task and `AdminAuthController`'s javadoc on the
+ * backend for why). There is no tenant field: admin staff have no tenant
+ * of their own to supply.
+ */
+function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeNext(searchParams.get("next"));
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const form = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      tenantId: getLastTenantId() ?? "",
-      email: "",
-      password: "",
-    },
+  const form = useForm<AdminLoginValues>({
+    resolver: zodResolver(adminLoginSchema),
+    defaultValues: { email: "", password: "" },
   });
 
-  async function onSubmit(values: LoginValues) {
+  async function onSubmit(values: AdminLoginValues) {
     setServerError(null);
     try {
-      const result = await login(values);
-      setLastTenantId(values.tenantId);
+      const result = await adminLogin(values);
 
       if (result.mfaRequired && result.mfaChallengeToken) {
-        setPendingChallenge({ mfaChallengeToken: result.mfaChallengeToken, email: values.email, defaultNext: "/" });
+        setPendingChallenge({
+          mfaChallengeToken: result.mfaChallengeToken,
+          email: values.email,
+          defaultNext: ADMIN_DEFAULT_PATH,
+        });
         router.push(`/totp-verify${next ? `?next=${encodeURIComponent(next)}` : ""}`);
         return;
       }
 
       if (result.accessToken && result.refreshToken) {
         applySession(result.accessToken, result.refreshToken, values.email);
+        const effectiveNext = next ?? ADMIN_DEFAULT_PATH;
         if (result.passwordChangeRequired) {
-          const suffix = next ? `&next=${encodeURIComponent(next)}` : "";
-          router.replace(`/account/change-password?required=1${suffix}`);
+          router.replace(`/account/change-password?required=1&next=${encodeURIComponent(effectiveNext)}`);
           return;
         }
-        router.replace(next ?? "/");
+        router.replace(effectiveNext);
       }
     } catch (error) {
       setServerError(error instanceof ApiError ? error.message : "Sign in failed. Try again.");
@@ -70,14 +75,13 @@ function LoginForm() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Sign in</h1>
+        <h1 className="text-xl font-semibold">Admin sign in</h1>
         <p className="text-sm text-muted-foreground">
-          Enter your tenant, email, and password to continue.
+          For platform and brand admin staff. Tenant users should use the regular sign-in page.
         </p>
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <ValidatedTextField control={form.control} name="tenantId" label="Tenant ID" />
           <ValidatedTextField control={form.control} name="email" label="Email" type="email" />
           <ValidatedTextField control={form.control} name="password" label="Password" type="password" />
           {serverError && (
@@ -91,25 +95,19 @@ function LoginForm() {
         </form>
       </Form>
       <Link
-        href="/forgot-password"
+        href="/login"
         className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
       >
-        Forgot password?
-      </Link>
-      <Link
-        href="/admin-login"
-        className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
-      >
-        Platform or brand admin? Sign in here
+        Not an admin? Sign in here
       </Link>
     </div>
   );
 }
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   return (
     <Suspense fallback={null}>
-      <LoginForm />
+      <AdminLoginForm />
     </Suspense>
   );
 }

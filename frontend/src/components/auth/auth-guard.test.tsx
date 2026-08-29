@@ -4,14 +4,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthGuard } from "./auth-guard";
 import { useSessionStore } from "@/stores/session-store";
 
-const { mockReplace, mockRestoreSession } = vi.hoisted(() => ({
+const { mockReplace, mockRestoreSession, mockPathname } = vi.hoisted(() => ({
   mockReplace: vi.fn(),
   mockRestoreSession: vi.fn(),
+  mockPathname: vi.fn(() => "/admin/roles"),
 }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
-  usePathname: () => "/admin/roles",
+  usePathname: mockPathname,
 }));
 
 vi.mock("@/lib/auth/session", () => ({
@@ -27,6 +28,7 @@ afterEach(() => {
   useSessionStore.getState().clearSession();
   mockReplace.mockClear();
   mockRestoreSession.mockReset();
+  mockPathname.mockReturnValue("/admin/roles");
 });
 
 describe("AuthGuard", () => {
@@ -59,7 +61,7 @@ describe("AuthGuard", () => {
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  it("redirects to /login with the current path as `next` when restoration fails", async () => {
+  it("F0.11.7: redirects to /admin-login with the current path as `next` when an admin route's restoration fails", async () => {
     mockRestoreSession.mockResolvedValue(false);
 
     render(
@@ -68,7 +70,21 @@ describe("AuthGuard", () => {
       </AuthGuard>,
     );
 
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/login?next=%2Fadmin%2Froles"));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/admin-login?next=%2Fadmin%2Froles"));
+    expect(screen.queryByText("secret")).not.toBeInTheDocument();
+  });
+
+  it("redirects to /login with the current path as `next` when a tenant route's restoration fails", async () => {
+    mockPathname.mockReturnValue("/dashboard");
+    mockRestoreSession.mockResolvedValue(false);
+
+    render(
+      <AuthGuard>
+        <p>secret</p>
+      </AuthGuard>,
+    );
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/login?next=%2Fdashboard"));
     expect(screen.queryByText("secret")).not.toBeInTheDocument();
   });
 });

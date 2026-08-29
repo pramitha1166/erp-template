@@ -20,6 +20,17 @@ export function login(request: LoginRequest): Promise<LoginResponse> {
   return apiFetch<LoginResponse>("/auth/login", { method: "POST", body: request, auth: false });
 }
 
+/** Mirrors `AdminAuthController.LoginRequest` (ADM-1 / ADM-5, F0.11.7) — no `tenantId`: platform/brand admin staff have no tenant of their own to supply. */
+export interface AdminLoginRequest {
+  email: string;
+  password: string;
+}
+
+/** Same response shape as tenant login (`AdminAuthController.LoginResponse`); the admin realm's `tid` is fixed server-side. */
+export function adminLogin(request: AdminLoginRequest): Promise<LoginResponse> {
+  return apiFetch<LoginResponse>("/admin/auth/login", { method: "POST", body: request, auth: false });
+}
+
 export interface TotpVerifyRequest {
   mfaChallengeToken: string;
   code: string;

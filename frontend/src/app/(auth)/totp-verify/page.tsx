@@ -42,6 +42,8 @@ function TotpVerifyForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const effectiveNext = next ?? challenge?.defaultNext ?? "/";
+
   async function onSubmit(values: CodeValues) {
     if (!challenge) {
       return;
@@ -53,11 +55,10 @@ function TotpVerifyForm() {
         applySession(result.accessToken, result.refreshToken, challenge.email);
         clearPendingChallenge();
         if (result.passwordChangeRequired) {
-          const suffix = next ? `&next=${encodeURIComponent(next)}` : "";
-          router.replace(`/account/change-password?required=1${suffix}`);
+          router.replace(`/account/change-password?required=1&next=${encodeURIComponent(effectiveNext)}`);
           return;
         }
-        router.replace(next ?? "/");
+        router.replace(effectiveNext);
       }
     } catch (error) {
       setServerError(error instanceof ApiError ? error.message : "Verification failed. Try again.");
