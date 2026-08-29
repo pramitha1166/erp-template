@@ -24,12 +24,18 @@ public class UserService {
 
     @Transactional
     public User createUser(UUID tenantId, String email, String rawPassword) {
+        return createUser(tenantId, email, rawPassword, false);
+    }
+
+    /** IAM-9: {@code mustChangePassword} is true for a system-generated credential (ADM-1/ADM-5 provisioning) so the first login forces a rotation. */
+    @Transactional
+    public User createUser(UUID tenantId, String email, String rawPassword, boolean mustChangePassword) {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new UserAlreadyExistsException(email);
         }
         passwordPolicyService.validate(tenantId, null, rawPassword);
 
-        User user = User.create(tenantId, email, passwordEncoder.encode(rawPassword));
+        User user = User.create(tenantId, email, passwordEncoder.encode(rawPassword), mustChangePassword);
         User saved = userRepository.save(user);
         passwordPolicyService.recordHistory(tenantId, saved.getId(), saved.getPasswordHash());
         return saved;
