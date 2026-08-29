@@ -194,11 +194,19 @@ specified the brand-level partner console. See `docs/SRS.md` §3.10.
 | 0.11.7 | Impersonation: time-boxed scoped token issuance for admin-as-tenant-admin sessions, mandatory audit tagging + tenant notification | ADM-7 | L |
 | 0.11.8 | Data export/erasure request workflow API, reusing the full data export capability | ADM-8, NFR-S7, NFR-D5 | M |
 | 0.11.9 | Platform usage/health rollup API: tenant count, active users, storage, tx volume, system health, grouped by brand | ADM-9 | M |
+| 0.11.10 | Platform/brand-admin authentication: login endpoint scoped to the admin realm (no caller-supplied `tenantId`), admin-scope session claims, and a one-shot first-platform-admin bootstrap path that is inert once an admin exists | ADM-1, ADM-5, IAM-1 | M |
 
 Model platform-admin and brand-admin as distinct permission scopes from the
 start (SRS design note on ADM-1/ADM-5) — not as ordinary IAM-3 roles with a
-higher permission count. Frontend companion: Epic F0.11, in the Frontend
-Track section below.
+higher permission count. That scope split is why 0.11.10 exists: the tenant
+login contract takes a caller-supplied `tenantId` (see `AuthController`),
+which a platform admin — who belongs to no tenant — has nothing to put in.
+The admin realm needs its own authentication entry point rather than a
+sentinel tenant value threaded through the tenant one. 0.11.10 blocks
+F0.11.7 and is the practical prerequisite for reaching *any* other 0.11
+task in a running environment: until it lands there is no way to obtain the
+first admin credential at all. Frontend companion: Epic F0.11, in the
+Frontend Track section below.
 
 **Phase 0 gate tasks:** tenant-isolation adversarial test (0.1.4), dummy
 document full-lifecycle test (0.1.2), second brand via config-only (0.8.17),
@@ -291,6 +299,12 @@ Companion to Epic 0.4.
 Frontend companion to Epic 0.11 (`PLAT-ADMIN`). Depends on Epic F0.0 (app
 shell) and Epic F0.2 (auth/permission patterns).
 
+F0.11.7 (admin login) is the entry point for every other task in this epic
+and should land first; it consumes the admin-realm auth endpoint from
+0.11.10. Keep it a genuinely separate screen and session surface from the
+F0.2.1 tenant login — reusing the tenant login page with a hidden or
+sentinel tenant field is the failure mode this task exists to avoid.
+
 | Task | Description | SRS Ref | Size |
 |---|---|---|---|
 | F0.11.1 | Platform Admin Console UI: brand list/create/suspend, cross-brand usage dashboard | ADM-1, ADM-9 | L |
@@ -299,6 +313,7 @@ shell) and Epic F0.2 (auth/permission patterns).
 | F0.11.4 | Brand Admin Console UI: tenant list/create/suspend within the brand, tenant-admin invite screen, per-tenant usage view | ADM-5, BRD-14, BRD-15 | L |
 | F0.11.5 | Impersonation entry point ("log in as tenant admin") with a persistent on-screen banner for the duration of an impersonated session | ADM-7 | M |
 | F0.11.6 | Tenant data export/erasure request screen for admins, with status tracking | ADM-8 | M |
+| F0.11.7 | Separate admin login UI at its own route, distinct from the tenant login: no tenant field, admin-realm branding, its own post-login redirect into the admin console, and forced change of a bootstrap/temporary credential on first use | ADM-1, ADM-5, IAM-1, IAM-9 | M |
 
 ---
 
