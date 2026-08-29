@@ -16,6 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
  * call is rejected — further platform admins are created the ordinary way,
  * by an existing platform admin inviting one (not modeled yet; out of this
  * epic's minimum scope).
+ *
+ * <p>IAM-9: {@code IdentityProvisioningApi.provisionTenantUser(tenantId,
+ * email)} generates the password and marks the account
+ * must-change-password, so {@code AdminAuthController}'s login response
+ * forces a rotation on first use — the generated credential is never a
+ * standing one.
  */
 @Service
 public class PlatformBootstrapService {

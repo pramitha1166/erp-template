@@ -4,6 +4,7 @@ import com.eudext.erp.config.tenancy.SuspendedTenantRegistry;
 import com.eudext.erp.config.tenancy.TenantContext;
 import com.eudext.erp.config.tenancy.TenantSuspendedException;
 import com.eudext.erp.iam.AuthAuditEvents;
+import com.eudext.erp.iam.AuthenticationFailedException;
 import com.eudext.erp.iam.internal.session.SessionService;
 import com.eudext.erp.iam.internal.settings.SecurityPolicy;
 import com.eudext.erp.iam.internal.settings.TenantSecuritySettingsService;
@@ -127,8 +128,9 @@ public class AuthService {
                 .issue(tenantId, user.getId(), ipAddress, userAgent, Duration.ofDays(7))
                 .rawRefreshToken();
         boolean passwordChangeRequired =
-                policy.expiryDays() != null
-                        && user.getPasswordChangedAt().plusSeconds(policy.expiryDays() * 86400L).isBefore(Instant.now());
+                user.isMustChangePassword()
+                        || (policy.expiryDays() != null
+                                && user.getPasswordChangedAt().plusSeconds(policy.expiryDays() * 86400L).isBefore(Instant.now()));
         events.publishEvent(new AuthAuditEvents.LoginSucceeded(tenantId, user.getId(), ipAddress, Instant.now()));
         return LoginResult.success(accessToken, refreshToken, passwordChangeRequired);
     }

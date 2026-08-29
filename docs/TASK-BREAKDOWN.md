@@ -194,6 +194,7 @@ specified the brand-level partner console. See `docs/SRS.md` §3.10.
 | 0.11.7 | Impersonation: time-boxed scoped token issuance for admin-as-tenant-admin sessions, mandatory audit tagging + tenant notification | ADM-7 | L |
 | 0.11.8 | Data export/erasure request workflow API, reusing the full data export capability | ADM-8, NFR-S7, NFR-D5 | M |
 | 0.11.9 | Platform usage/health rollup API: tenant count, active users, storage, tx volume, system health, grouped by brand | ADM-9 | M |
+| 0.11.10 | Platform/brand-admin authentication: login endpoint scoped to the admin realm (no caller-supplied `tenantId`), admin-scope session claims, and a one-shot first-platform-admin bootstrap path that is inert once an admin exists | ADM-1, ADM-5, IAM-1 | M |
 
 Model platform-admin and brand-admin as distinct permission scopes from the
 start (SRS design note on ADM-1/ADM-5) — not as ordinary IAM-3 roles with a
