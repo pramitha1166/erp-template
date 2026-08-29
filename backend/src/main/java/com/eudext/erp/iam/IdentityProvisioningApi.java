@@ -19,7 +19,10 @@ public interface IdentityProvisioningApi {
      * Creates a user in {@code tenantId} with a freshly generated temporary
      * password, returned once so the caller can deliver it (e.g. via
      * {@code NotificationApi}) — it is never logged or persisted in the
-     * clear beyond this call.
+     * clear beyond this call. IAM-9: the account is marked
+     * must-change-password, so the next successful login reports {@code
+     * passwordChangeRequired = true} regardless of the tenant's expiry
+     * policy.
      */
     ProvisionedUser provisionTenantUser(UUID tenantId, String email);
 

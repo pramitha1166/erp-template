@@ -51,7 +51,9 @@ class IdentityProvisioningServiceImpl implements IdentityProvisioningApi {
     @Override
     @Transactional
     public ProvisionedUser provisionTenantUser(UUID tenantId, String email) {
-        return provisionTenantUser(tenantId, email, TemporaryPasswordGenerator.generate());
+        String generatedPassword = TemporaryPasswordGenerator.generate();
+        User user = userService.createUser(tenantId, email, generatedPassword, true);
+        return new ProvisionedUser(user.getId(), user.getEmail(), generatedPassword);
     }
 
     @Override

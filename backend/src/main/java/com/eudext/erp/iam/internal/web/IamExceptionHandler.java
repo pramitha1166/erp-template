@@ -1,7 +1,7 @@
 package com.eudext.erp.iam.internal.web;
 
 import com.eudext.erp.config.tenancy.TenantSuspendedException;
-import com.eudext.erp.iam.internal.auth.AuthenticationFailedException;
+import com.eudext.erp.iam.AuthenticationFailedException;
 import com.eudext.erp.iam.internal.password.PasswordPolicyViolationException;
 import com.eudext.erp.iam.internal.rbac.TotpRequiredException;
 import com.eudext.erp.iam.internal.session.InvalidRefreshTokenException;

@@ -70,6 +70,10 @@ public class User {
     @Column(name = "locked_until")
     private Instant lockedUntil;
 
+    /** IAM-9: set when the current password was system-generated rather than user-chosen (ADM-1 bootstrap, ADM-5 provisioning) — cleared by {@link #changePassword}. */
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword;
+
     @CreatedBy
     @Column(name = "created_by", updatable = false)
     private String createdBy;
@@ -93,11 +97,16 @@ public class User {
     protected User() {}
 
     public static User create(UUID tenantId, String email, String passwordHash) {
+        return create(tenantId, email, passwordHash, false);
+    }
+
+    public static User create(UUID tenantId, String email, String passwordHash, boolean mustChangePassword) {
         User user = new User();
         user.tenantId = tenantId;
         user.email = email;
         user.passwordHash = passwordHash;
         user.passwordChangedAt = Instant.now();
+        user.mustChangePassword = mustChangePassword;
         return user;
     }
 
@@ -120,6 +129,11 @@ public class User {
     public void changePassword(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
         this.passwordChangedAt = Instant.now();
+        this.mustChangePassword = false;
+    }
+
+    public boolean isMustChangePassword() {
+        return mustChangePassword;
     }
 
     public String getPasswordAlgo() {
