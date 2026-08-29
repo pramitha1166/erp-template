@@ -6,31 +6,39 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
  * Base class for integration tests that need a real Postgres and Redis
- * (NFR-M2). Containers are shared across the whole test class to keep
- * suite run time reasonable; each subclass gets a fresh Spring context per
- * the usual {@code @SpringBootTest} caching rules.
+ * (NFR-M2).
+ *
+ * <p>The containers are deliberately started by hand here — the singleton
+ * pattern — rather than through {@code @Testcontainers}/{@code @Container}.
+ * That extension stops a static container when its *class* finishes, but
+ * every subclass here shares the same Spring context configuration, so the
+ * framework's context cache hands the second and later classes the first
+ * class's {@code DataSource} — still pointing at the container that was
+ * just stopped. The suite then fails from the second IT class onwards with
+ * "connection refused" on a stale port. Started once per JVM and never
+ * stopped (Ryuk reaps them at exit), the URL stays valid for the cached
+ * context's whole life.
  */
-@Testcontainers
 @SpringBootTest
 @ActiveProfiles("test")
 public abstract class AbstractIntegrationTest {
 
-    @Container
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"))
                     .withDatabaseName("eudext_erp")
                     .withUsername("eudext")
                     .withPassword("eudext");
 
-    @Container
-    static final RedisContainer REDIS =
-            new RedisContainer(DockerImageName.parse("redis:7-alpine"));
+    static final RedisContainer REDIS = new RedisContainer(DockerImageName.parse("redis:7-alpine"));
+
+    static {
+        POSTGRES.start();
+        REDIS.start();
+    }
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
