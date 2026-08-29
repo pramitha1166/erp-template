@@ -300,6 +300,7 @@ shell) and Epic F0.2 (auth/permission patterns).
 | F0.11.4 | Brand Admin Console UI: tenant list/create/suspend within the brand, tenant-admin invite screen, per-tenant usage view | ADM-5, BRD-14, BRD-15 | L |
 | F0.11.5 | Impersonation entry point ("log in as tenant admin") with a persistent on-screen banner for the duration of an impersonated session | ADM-7 | M |
 | F0.11.6 | Tenant data export/erasure request screen for admins, with status tracking | ADM-8 | M |
+| F0.11.7 | Separate admin login UI at its own route, distinct from the tenant login: no tenant field, admin-realm branding, its own post-login redirect into the admin console, and forced change of a bootstrap/temporary credential on first use | ADM-1, ADM-5, IAM-1, IAM-9 | M |
 
 ---
 

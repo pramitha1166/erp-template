@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
+import { ADMIN_LOGIN_PATH, isAdminRoute } from "@/lib/auth/admin-realm";
 import { restoreSession } from "@/lib/auth/session";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -12,6 +13,11 @@ import { useSessionStore } from "@/stores/session-store";
  * `restoreSession()` attempt against the stored refresh token before
  * deciding there's really no session — otherwise every reload would bounce
  * an already-logged-in user out to `/login`.
+ *
+ * F0.11.7: an unauthenticated visit under `/admin/**` bounces to the admin
+ * realm's own login instead — the tenant `/login` form asks for a
+ * `tenantId` platform/brand admin staff don't have (see
+ * `AdminAuthController`'s javadoc on the backend).
  */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useSessionStore((state) => state.isAuthenticated);
@@ -32,7 +38,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       setChecking(false);
       if (!restored) {
         const next = encodeURIComponent(pathname);
-        router.replace(`/login?next=${next}`);
+        const loginPath = isAdminRoute(pathname) ? ADMIN_LOGIN_PATH : "/login";
+        router.replace(`${loginPath}?next=${next}`);
       }
     });
     return () => {
