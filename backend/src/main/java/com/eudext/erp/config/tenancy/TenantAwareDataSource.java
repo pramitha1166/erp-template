@@ -3,6 +3,7 @@ package com.eudext.erp.config.tenancy;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.UUID;
 import javax.sql.DataSource;
 import org.springframework.jdbc.datasource.DelegatingDataSource;
 
@@ -20,6 +21,14 @@ import org.springframework.jdbc.datasource.DelegatingDataSource;
  * the value (including to empty when no tenant is set), so a connection
  * returning to the pool can never leak a stale tenant into the next
  * borrower.
+ *
+ * <p>Because stamping only happens at checkout, a plain {@code
+ * TenantContext.set} partway through an already-running transaction has
+ * no effect on the connection that transaction is already holding — see
+ * {@link TenantContextScope}, which re-stamps the live connection via
+ * {@link #stamp} for exactly that case (a platform/brand-admin operation
+ * that needs to act within a specific tenant's RLS scope for one step of
+ * an otherwise admin-scoped transaction).
  */
 public class TenantAwareDataSource extends DelegatingDataSource {
 
@@ -40,11 +49,24 @@ public class TenantAwareDataSource extends DelegatingDataSource {
     }
 
     private Connection stampTenant(Connection connection) throws SQLException {
-        String tenantId = TenantContext.get().map(Object::toString).orElse("");
+        stamp(connection, TenantContext.get().orElse(null));
+        return connection;
+    }
+
+    /**
+     * ADM-1 / ADM-5 / ADM-9: re-stamps an already-checked-out connection.
+     * Needed by {@link TenantContextScope}, which switches {@link
+     * TenantContext} mid-transaction for a cross-tenant admin
+     * operation — a plain {@code TenantContext.set} has no effect on a
+     * connection that's already bound to the current transaction, since
+     * this class only stamps at checkout time (see this class's own
+     * javadoc), and a mid-transaction {@code TenantContextScope.enter}
+     * runs after checkout, not before it.
+     */
+    static void stamp(Connection connection, UUID tenantId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(SET_TENANT_SQL)) {
-            statement.setString(1, tenantId);
+            statement.setString(1, tenantId == null ? "" : tenantId.toString());
             statement.execute();
         }
-        return connection;
     }
 }

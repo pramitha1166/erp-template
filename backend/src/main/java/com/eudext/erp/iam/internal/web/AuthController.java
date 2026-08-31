@@ -25,7 +25,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** IAM-1 / IAM-2 / IAM-8: login, refresh, logout, TOTP enrollment, and the caller's own session list. */
+/**
+ * IAM-1 / IAM-2 / IAM-8: login, refresh, logout, TOTP enrollment, and the
+ * caller's own session list — for tenant users, who supply their own {@code
+ * tenantId}. Platform/brand admin staff have no tenant of their own to
+ * supply here; they authenticate via {@code admin}'s own {@code
+ * AdminAuthController} instead (ADM-1/ADM-5), then share {@code /refresh},
+ * {@code /logout}, {@code /totp/verify}, and {@code /sessions} with tenant
+ * users unchanged, since none of those take a caller-supplied tenant id.
+ */
 @RestController
 @RequestMapping("/auth")
 public class AuthController {

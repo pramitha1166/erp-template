@@ -1,5 +1,6 @@
 package com.eudext.erp.iam.internal.auth;
 
+import com.eudext.erp.config.tenancy.ImpersonationContext;
 import com.eudext.erp.config.tenancy.TenantContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -8,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -39,17 +41,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         try {
-            bearerToken(request).flatMap(jwtService::parseAccessToken).ifPresent(claims -> {
-                TenantContext.set(claims.tenantId());
-                var authentication =
-                        new UsernamePasswordAuthenticationToken(claims.userId().toString(), null, List.of());
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            });
+            Optional<String> token = bearerToken(request);
+            token.flatMap(jwtService::parseAccessToken)
+                    .ifPresentOrElse(
+                            claims -> authenticate(claims.userId(), claims.tenantId(), null),
+                            () -> token.flatMap(jwtService::parseImpersonationToken)
+                                    .ifPresent(claims -> authenticate(
+                                            claims.targetUserId(), claims.targetTenantId(), claims.actorUserId())));
             filterChain.doFilter(request, response);
         } finally {
             TenantContext.clear();
+            ImpersonationContext.clear();
             SecurityContextHolder.clearContext();
         }
+    }
+
+    /**
+     * ADM-7: {@code actorUserId} is non-null only for an impersonation
+     * token — the authenticated principal is still {@code userId} (the
+     * impersonated tenant-admin) so every downstream permission check
+     * behaves exactly as it would for that user's own login.
+     */
+    private void authenticate(UUID userId, UUID tenantId, UUID actorUserId) {
+        TenantContext.set(tenantId);
+        ImpersonationContext.set(actorUserId);
+        var authentication = new UsernamePasswordAuthenticationToken(userId.toString(), null, List.of());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
     private Optional<String> bearerToken(HttpServletRequest request) {

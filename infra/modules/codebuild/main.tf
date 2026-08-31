@@ -74,6 +74,26 @@ data "aws_iam_policy_document" "codebuild" {
   }
 
   statement {
+    sid       = "ReadDdnsConfig"
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = ["${aws_secretsmanager_secret.ddns.arn}*"]
+  }
+
+  # Finding a task's public IP to publish as DNS: the address lives on the
+  # task's network interface, so it takes both an ECS and an EC2 lookup.
+  statement {
+    sid    = "ResolveTaskAddresses"
+    effect = "Allow"
+    actions = [
+      "ecs:ListTasks",
+      "ecs:DescribeTasks",
+      "ec2:DescribeNetworkInterfaces",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
     sid    = "Logs"
     effect = "Allow"
     actions = [
@@ -102,6 +122,20 @@ resource "aws_secretsmanager_secret" "github_token" {
   count                   = var.enable_github_deployment_status ? 1 : 0
   name                    = "${local.name}/github-deployment-token"
   description             = "GitHub token with `deployments: write`, used to report deploy status back to the repo."
+  recovery_window_in_days = 0
+  tags                    = local.common_tags
+}
+
+# ---------------------------------------------------------------------------
+# Dynamic DNS. Without a load balancer the tasks are addressed by IPs that
+# change on every deployment; a free DDNS hostname updated after each deploy
+# gives back a stable address. Terraform creates the secret, never its value
+# — see infra/README.md for the shape.
+# ---------------------------------------------------------------------------
+
+resource "aws_secretsmanager_secret" "ddns" {
+  name                    = "${local.name}/ddns"
+  description             = "Dynamic-DNS provider token and hostnames, as {\"provider\":\"duckdns\",\"token\":\"...\",\"app\":\"...\",\"api\":\"...\"}."
   recovery_window_in_days = 0
   tags                    = local.common_tags
 }
@@ -176,6 +210,12 @@ resource "aws_codebuild_project" "this" {
     environment_variable {
       name  = "APP_BASE_URL"
       value = var.app_base_url
+    }
+    # Baked into the frontend bundle at image-build time — see
+    # frontend/Dockerfile. Changing it needs a rebuild, not a redeploy.
+    environment_variable {
+      name  = "API_BASE_URL"
+      value = var.api_base_url
     }
     environment_variable {
       name  = "GITHUB_REPO"

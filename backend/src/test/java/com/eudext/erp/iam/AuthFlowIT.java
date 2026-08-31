@@ -91,9 +91,9 @@ class AuthFlowIT extends AbstractIntegrationTest {
         createUser(tenantId, "bob@example.com", "Str0ngPassw0rd!");
 
         assertThatThrownBy(() -> authService.login(tenantId, "bob@example.com", "WrongPassword1", "127.0.0.1", "junit"))
-                .isInstanceOf(com.eudext.erp.iam.internal.auth.AuthenticationFailedException.class);
+                .isInstanceOf(com.eudext.erp.iam.AuthenticationFailedException.class);
         assertThatThrownBy(() -> authService.login(tenantId, "nobody@example.com", "WrongPassword1", "127.0.0.1", "junit"))
-                .isInstanceOf(com.eudext.erp.iam.internal.auth.AuthenticationFailedException.class);
+                .isInstanceOf(com.eudext.erp.iam.AuthenticationFailedException.class);
     }
 
     @Test

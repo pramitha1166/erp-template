@@ -57,6 +57,17 @@ variable "enable_nat_gateway" {
   default     = false
 }
 
+variable "public_api_base_url" {
+  description = <<-EOT
+    Public URL of the backend API, as browsers reach it. Inlined into the
+    frontend bundle when its image is built, so changing it needs a rebuild
+    (a new pipeline run), not just a redeploy. Leave empty when enable_alb
+    is true — the ALB then path-routes /api on the same origin.
+  EOT
+  type        = string
+  default     = "http://eudext-erp-api.duckdns.org:8080/api"
+}
+
 variable "enable_alb" {
   description = <<-EOT
     Put an Application Load Balancer in front of the services. Off by

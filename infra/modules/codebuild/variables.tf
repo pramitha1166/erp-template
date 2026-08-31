@@ -49,3 +49,9 @@ variable "enable_github_deployment_status" {
   type        = bool
   default     = true
 }
+
+variable "api_base_url" {
+  description = "Public URL of the backend API, inlined into the frontend bundle when its image is built."
+  type        = string
+  default     = "http://localhost:8080/api"
+}

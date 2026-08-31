@@ -1,6 +1,7 @@
 package com.eudext.erp.iam.internal.web;
 
-import com.eudext.erp.iam.internal.auth.AuthenticationFailedException;
+import com.eudext.erp.config.tenancy.TenantSuspendedException;
+import com.eudext.erp.iam.AuthenticationFailedException;
 import com.eudext.erp.iam.internal.password.PasswordPolicyViolationException;
 import com.eudext.erp.iam.internal.rbac.TotpRequiredException;
 import com.eudext.erp.iam.internal.session.InvalidRefreshTokenException;
@@ -19,6 +20,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /** Translates IAM's internal exceptions into the REST layer's error responses. */
 @RestControllerAdvice(basePackages = "com.eudext.erp.iam")
 public class IamExceptionHandler {
+
+    @ExceptionHandler(TenantSuspendedException.class)
+    public ResponseEntity<ApiError> tenantSuspended(TenantSuspendedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.of(e.getMessage()));
+    }
 
     @ExceptionHandler(AuthenticationFailedException.class)
     public ResponseEntity<ApiError> authenticationFailed(AuthenticationFailedException e) {

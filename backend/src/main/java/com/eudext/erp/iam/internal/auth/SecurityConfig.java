@@ -28,7 +28,17 @@ public class SecurityConfig {
     private static final String[] PUBLIC_PATHS = {
         "/auth/login", "/auth/refresh", "/auth/totp/verify",
         "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
-        "/actuator/health", "/actuator/info"
+        "/actuator/health", "/actuator/info",
+        // ADM-1: one-time "first run creates the admin" bootstrap — see
+        // PlatformBootstrapService's javadoc for why this is safe despite
+        // being unauthenticated (it self-disables after the first admin
+        // exists), and ADM-5's invite-acceptance flow, which is likewise
+        // reached before the invitee has any session.
+        "/admin/platform/bootstrap", "/admin/tenants/*/invites/accept",
+        // ADM-1 / ADM-5: the admin realm's own login entry point — see
+        // AdminAuthController's javadoc for why it never accepts a
+        // caller-supplied tenantId the way /auth/login does.
+        "/admin/auth/login"
     };
 
     @Bean

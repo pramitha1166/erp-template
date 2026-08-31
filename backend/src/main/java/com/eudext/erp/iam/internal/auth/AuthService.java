@@ -1,7 +1,10 @@
 package com.eudext.erp.iam.internal.auth;
 
+import com.eudext.erp.config.tenancy.SuspendedTenantRegistry;
 import com.eudext.erp.config.tenancy.TenantContext;
+import com.eudext.erp.config.tenancy.TenantSuspendedException;
 import com.eudext.erp.iam.AuthAuditEvents;
+import com.eudext.erp.iam.AuthenticationFailedException;
 import com.eudext.erp.iam.internal.session.SessionService;
 import com.eudext.erp.iam.internal.settings.SecurityPolicy;
 import com.eudext.erp.iam.internal.settings.TenantSecuritySettingsService;
@@ -35,6 +38,7 @@ public class AuthService {
     private final SessionService sessionService;
     private final TotpService totpService;
     private final TenantSecuritySettingsService settingsService;
+    private final SuspendedTenantRegistry suspendedTenantRegistry;
     private final ApplicationEventPublisher events;
 
     public AuthService(
@@ -44,6 +48,7 @@ public class AuthService {
             SessionService sessionService,
             TotpService totpService,
             TenantSecuritySettingsService settingsService,
+            SuspendedTenantRegistry suspendedTenantRegistry,
             ApplicationEventPublisher events) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -51,6 +56,7 @@ public class AuthService {
         this.sessionService = sessionService;
         this.totpService = totpService;
         this.settingsService = settingsService;
+        this.suspendedTenantRegistry = suspendedTenantRegistry;
         this.events = events;
     }
 
@@ -70,6 +76,7 @@ public class AuthService {
     public LoginResult login(UUID tenantId, String email, String rawPassword, String ipAddress, String userAgent) {
         TenantContext.set(tenantId);
         try {
+            suspendedTenantRegistry.requireActive(tenantId);
             User user = userRepository.findByEmail(email).orElse(null);
             if (user == null || !passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
                 if (user != null) {
@@ -121,8 +128,9 @@ public class AuthService {
                 .issue(tenantId, user.getId(), ipAddress, userAgent, Duration.ofDays(7))
                 .rawRefreshToken();
         boolean passwordChangeRequired =
-                policy.expiryDays() != null
-                        && user.getPasswordChangedAt().plusSeconds(policy.expiryDays() * 86400L).isBefore(Instant.now());
+                user.isMustChangePassword()
+                        || (policy.expiryDays() != null
+                                && user.getPasswordChangedAt().plusSeconds(policy.expiryDays() * 86400L).isBefore(Instant.now()));
         events.publishEvent(new AuthAuditEvents.LoginSucceeded(tenantId, user.getId(), ipAddress, Instant.now()));
         return LoginResult.success(accessToken, refreshToken, passwordChangeRequired);
     }
@@ -134,6 +142,7 @@ public class AuthService {
         UUID tenantId = SessionService.extractTenantId(rawRefreshToken);
         TenantContext.set(tenantId);
         try {
+            suspendedTenantRegistry.requireActive(tenantId);
             SessionService.RotationResult rotation = sessionService.rotate(rawRefreshToken, ipAddress, userAgent, Duration.ofDays(7));
             String accessToken = jwtService.issueAccessToken(rotation.userId(), rotation.tenantId());
             return new TokenPair(accessToken, rotation.issued().rawRefreshToken());

@@ -44,6 +44,15 @@ export async function restoreSession(): Promise<boolean> {
   }
 }
 
+/** F0.11.3: the caller's own tenant id, straight from the access token (see `jwt.ts`) — used by tenant-scoped screens like the setup checklist that aren't keyed off the company switcher. */
+export function getCurrentTenantId(): string | null {
+  const token = tokens.getAccessToken();
+  if (!token) {
+    return null;
+  }
+  return decodeAccessToken(token)?.tenantId ?? null;
+}
+
 /** IAM-1: logout — best-effort revoke server-side, but the client-side session always clears. */
 export async function endSession(): Promise<void> {
   const refreshToken = tokens.getRefreshToken();

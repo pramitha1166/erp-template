@@ -4,6 +4,8 @@ import com.eudext.erp.audit.internal.log.AuditAction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -75,7 +77,9 @@ public class AuditLogWriter {
                 action.name(),
                 changesJson,
                 actor == null ? "system" : actor,
-                occurredAt,
+                // pgjdbc cannot infer a SQL type for a bare Instant, so hand it
+                // the java.time type it maps to timestamptz directly.
+                OffsetDateTime.ofInstant(occurredAt, ZoneOffset.UTC),
                 ipAddress,
                 requestId);
     }

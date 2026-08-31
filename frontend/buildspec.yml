@@ -16,7 +16,7 @@ phases:
     commands:
       - cd frontend
       - echo "Building frontend image $ECR_REGISTRY/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION..."
-      - docker build -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION" -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:staging" .
+      - docker build --build-arg NEXT_PUBLIC_API_BASE_URL="$API_BASE_URL" -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION" -t "$ECR_REGISTRY/$IMAGE_REPO_NAME:staging" .
   post_build:
     commands:
       - echo "Pushing images..."
@@ -29,4 +29,5 @@ phases:
     # a broken deploy as well as a good one. The script is deliberately
     # incapable of failing the build.
     finally:
+      - bash "$CODEBUILD_SRC_DIR/infra/scripts/update-dns.sh"
       - bash "$CODEBUILD_SRC_DIR/infra/scripts/github-deployment-status.sh"

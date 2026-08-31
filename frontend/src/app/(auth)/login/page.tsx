@@ -48,7 +48,7 @@ function LoginForm() {
       setLastTenantId(values.tenantId);
 
       if (result.mfaRequired && result.mfaChallengeToken) {
-        setPendingChallenge({ mfaChallengeToken: result.mfaChallengeToken, email: values.email });
+        setPendingChallenge({ mfaChallengeToken: result.mfaChallengeToken, email: values.email, defaultNext: "/" });
         router.push(`/totp-verify${next ? `?next=${encodeURIComponent(next)}` : ""}`);
         return;
       }
@@ -95,6 +95,12 @@ function LoginForm() {
         className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
       >
         Forgot password?
+      </Link>
+      <Link
+        href="/admin-login"
+        className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
+      >
+        Platform or brand admin? Sign in here
       </Link>
     </div>
   );

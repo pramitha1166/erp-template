@@ -2,6 +2,7 @@ package com.eudext.erp.audit.internal.write;
 
 import com.eudext.erp.audit.internal.log.AuditAction;
 import com.eudext.erp.config.audit.NotAudited;
+import com.eudext.erp.config.tenancy.ImpersonationContext;
 import com.eudext.erp.config.tenancy.TenantContext;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -134,8 +135,12 @@ public class AuditingInterceptor implements Interceptor {
         return !entityType.isAnnotationPresent(NotAudited.class);
     }
 
+    /** ADM-7: an impersonated session's mutations are tagged, not silently attributed to the tenant-admin alone. */
     private static String currentActor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication == null || authentication.getName() == null ? "system" : authentication.getName();
+        String actor = authentication == null || authentication.getName() == null ? "system" : authentication.getName();
+        return ImpersonationContext.get()
+                .map(adminUserId -> actor + " (impersonated by " + adminUserId + ")")
+                .orElse(actor);
     }
 }
