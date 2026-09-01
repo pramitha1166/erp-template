@@ -74,6 +74,10 @@ public class User {
     @Column(name = "must_change_password", nullable = false)
     private boolean mustChangePassword;
 
+    /** WF-3: this user's direct manager, for workflow's reporting-hierarchy approver resolution. Null if unset. */
+    @Column(name = "manager_id")
+    private UUID managerId;
+
     @CreatedBy
     @Column(name = "created_by", updatable = false)
     private String createdBy;
@@ -201,6 +205,18 @@ public class User {
     public void recordSuccessfulLogin() {
         this.failedLoginAttempts = 0;
         this.lockedUntil = null;
+    }
+
+    public UUID getManagerId() {
+        return managerId;
+    }
+
+    /** WF-3: sets/clears this user's direct manager. A user cannot be their own manager. */
+    public void assignManager(UUID managerId) {
+        if (managerId != null && managerId.equals(this.id)) {
+            throw new IllegalArgumentException("A user cannot be their own manager");
+        }
+        this.managerId = managerId;
     }
 
     public Instant getCreatedAt() {

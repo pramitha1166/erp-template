@@ -41,6 +41,9 @@ public interface IdentityProvisioningApi {
 
     void setUserActive(UUID tenantId, UUID userId, boolean active);
 
+    /** WF-3: sets (or clears, with a {@code null} managerId) the direct manager used for reporting-hierarchy approver resolution. */
+    void setManager(UUID tenantId, UUID userId, UUID managerId);
+
     /** Active-user count for whichever tenant is ambient in {@code TenantContext} when called. */
     long countActiveUsers();
 

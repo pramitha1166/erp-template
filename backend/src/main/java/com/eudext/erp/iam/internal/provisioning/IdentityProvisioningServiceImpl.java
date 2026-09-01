@@ -109,6 +109,17 @@ class IdentityProvisioningServiceImpl implements IdentityProvisioningApi {
     }
 
     @Override
+    @Transactional
+    public void setManager(UUID tenantId, UUID userId, UUID managerId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new NoSuchElementException("No such user"));
+        if (!user.getTenantId().equals(tenantId)) {
+            throw new IllegalArgumentException("User does not belong to tenant " + tenantId);
+        }
+        user.assignManager(managerId);
+        userRepository.save(user);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public long countActiveUsers() {
         return userRepository.countByStatus(UserStatus.ACTIVE);
