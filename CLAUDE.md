@@ -38,7 +38,8 @@ F0.11 Admin Portal UI (#32).
 already merged via a prior commit; issue may just need closing rather than
 more work, confirm before starting), F0.4 Workflow & Approvals UI (#25),
 F0.11.7 separate admin login UI (#36, a sub-task split out during F0.11
-implementation).
+implementation), F0.5 Numbering UI (#41, cut once Epic 0.5's backend
+landed — see `docs/TASK-BREAKDOWN.md`).
 
 **Addendum:** `PLAT-ADMIN` (SRS §3.10, `ADM-1`..`ADM-9`) was added after a
 gap review found no requirement for who provisions a `Brand` or how a
@@ -48,9 +49,10 @@ Console, tenant onboarding with default-data seeding, suspension/
 reactivation, audited impersonation, and PDPA export/erasure handling.
 See Epic 0.11 / F0.11 in `docs/TASK-BREAKDOWN.md`.
 
-**Not yet broken out:** frontend companions for Epics 0.5–0.10 (i.e.
-F0.5–F0.10) don't exist yet in `docs/TASK-BREAKDOWN.md` or as issues — cut
-them once each backend epic lands, following the F0.0–F0.4/F0.11 pattern.
+**Not yet broken out:** frontend companions for Epics 0.6–0.10 (i.e.
+F0.6–F0.10) don't exist yet in `docs/TASK-BREAKDOWN.md` or as issues — cut
+them once each backend epic lands, following the F0.0–F0.5/F0.11 pattern.
+(F0.5 Numbering UI was cut when Epic 0.5's backend landed — see below.)
 
 When an Epic's PR merges, update its line above and close the matching
 GitHub issue if it isn't already closed — don't let this section go stale.
