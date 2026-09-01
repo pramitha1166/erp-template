@@ -14,31 +14,40 @@ Spring Modulith · PostgreSQL 16 (RLS) · Next.js 15 / TypeScript.
   starting anything not obviously covered there, check whether it already
   exists as a task before inventing a new approach.
 
-## Project status (last updated 2026-08-31)
+## Project status (last updated 2026-09-01)
 
 GitHub issues are the live source of truth for what's done — this is a
 snapshot to orient a new session quickly, not authoritative. Re-check issue
 state before assuming anything below is still accurate.
 
 **Backend Epics — done (merged):** 0.0 Bootstrap (#1), 0.1 Document Model
-(#2), 0.2 IAM (#3), 0.3 Audit Trail (#4), 0.11 Tenant Onboarding &
-Administration / `PLAT-ADMIN` (#31, plus sub-task 0.11.10 platform/brand-
-admin auth + bootstrap rotation, #35).
+(#2), 0.2 IAM (#3), 0.3 Audit Trail (#4), 0.4 Workflow Engine / `PLAT-WF`
+(#5, PR #39), 0.11 Tenant Onboarding & Administration / `PLAT-ADMIN` (#31,
+plus sub-task 0.11.10 platform/brand-admin auth + bootstrap rotation, #35).
 
-**Backend Epics — open:** 0.4 Workflow Engine (#5), 0.5 Numbering (#6),
-0.6 Master Data (#7), 0.7 Documents & Attachments (#8), 0.8 Branding &
-White-Label (#9), 0.9 Branch & Org Dimensions (#10), 0.10 Reporting
-Framework (#11).
+**0.4 caveat:** the merging session could not run `mvn verify`'s
+Testcontainers IT (`WorkflowEngineIT`) — sandbox egress blocked the Docker
+Hub pull — so it compiled clean and unit-tested clean but the integration
+test has not actually been confirmed green by anyone yet. Run `mvn verify`
+against it before building further on top (F0.4, or any document-owning
+module wiring in via `WorkflowApi`).
+
+**Backend Epics — open:** 0.5 Numbering (#6), 0.6 Master Data (#7),
+0.7 Documents & Attachments (#8), 0.8 Branding & White-Label (#9),
+0.9 Branch & Org Dimensions (#10), 0.10 Reporting Framework (#11).
 
 **Frontend Epics — done (merged):** F0.0 App Shell & Bootstrap (#21),
 F0.1 Document Lifecycle UI Primitives (#22), F0.2 Auth & Access UI (#23),
-F0.11 Admin Portal UI (#32).
+F0.3 Audit Trail UI (#24 — code had already merged via a prior commit;
+closed 2026-09-01 with no further work needed), F0.11 Admin Portal UI
+(#32).
 
-**Frontend Epics — open / verify:** F0.3 Audit Trail UI (#24 — code
-already merged via a prior commit; issue may just need closing rather than
-more work, confirm before starting), F0.4 Workflow & Approvals UI (#25),
-F0.11.7 separate admin login UI (#36, a sub-task split out during F0.11
-implementation).
+**Frontend Epics — open:** F0.4 Workflow & Approvals UI (#25 — now
+unblocked, backend 0.4 merged; REST surface exists for all of it:
+`ApprovalChainController`, `ApprovalTaskController`, `ApprovalDelegation
+Controller`, `ApprovalHistoryController` — see 0.4 caveat above before
+starting), F0.11.7 separate admin login UI (#36, a sub-task split out
+during F0.11 implementation).
 
 **Addendum:** `PLAT-ADMIN` (SRS §3.10, `ADM-1`..`ADM-9`) was added after a
 gap review found no requirement for who provisions a `Brand` or how a

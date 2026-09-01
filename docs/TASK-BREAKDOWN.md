@@ -81,6 +81,22 @@ requirement ID of its own, so it's called out explicitly as Epic 0.0 below.
 | 0.4.7 | Approval history panel (timestamps, comments) on documents | WF-7 | S |
 | 0.4.8 | Email + in-app notifications on pending approval | WF-8 | M |
 
+**Delivered (#5, PR #39).** Document-owning modules integrate through
+`WorkflowApi.startApproval()` called before `Document.submit()`, and only
+call `submit()` once the instance reaches `APPROVED` — `Document` has no
+`SUBMITTED → DRAFT` transition (ARCH-4), so WF-6 (rejection returns the
+document to draft) is satisfied by never leaving `DRAFT` in the first
+place rather than by reversing a submission. `iam` gained a small,
+additive surface for this: a `manager_id` column on users plus
+`ApproverDirectoryApi` for role-membership and reporting-hierarchy lookups
+— `workflow` never reaches into `iam` internals (ARCH-1). Unit coverage
+for condition evaluation, delegation date-range logic, and approver
+resolution, plus `WorkflowEngineIT` end-to-end via Testcontainers — the
+IT could not actually be run in the authoring sandbox (Docker Hub pull
+blocked); confirm it green with `mvn verify` before relying on this in
+another module. Unblocks Epic F0.4 below and task 0.9.7 (branch-based
+approval resolution).
+
 ### Epic 0.5 — Numbering (`PLAT-NUM`)
 
 | Task | SRS Ref | Size |
@@ -283,7 +299,13 @@ Companion to Epic 0.3.
 
 ### Epic F0.4 — Workflow & Approvals UI
 
-Companion to Epic 0.4.
+Companion to Epic 0.4. **Unblocked as of 2026-09-01** — backend 0.4 is
+merged (#5, PR #39) with a REST surface for all of it
+(`ApprovalChainController`, `ApprovalTaskController`,
+`ApprovalDelegationController`, `ApprovalHistoryController`); see the
+delivery note under Epic 0.4 above, including the caveat that
+`WorkflowEngineIT` still needs to be confirmed green before this epic
+leans on it.
 
 | Task | Description | SRS Ref | Size |
 |---|---|---|---|
