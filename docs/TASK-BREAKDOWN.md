@@ -219,14 +219,14 @@ hours) and should be verified against it explicitly.
 ## Frontend Track — Phase 0 (Epics 0.0–0.4)
 
 The original breakdown wove UI work into whichever backend epic owned the
-feature. This section pulls the frontend slice for the five Phase 0 epics
+feature. This section pulls the frontend slice for the Phase 0 epics
 completed so far (0.0 Bootstrap, 0.1 Document Model, 0.2 IAM, 0.3 Audit,
-0.4 Workflow Engine) into its own explicit track so frontend work can be
-staffed and issued independently of backend progress. Frontend tasks for
-Epics 0.5–0.10 follow the same pattern once those backend epics land.
-Epic F0.11 (Admin Portal UI) is included here too since its backend
+0.4 Workflow Engine, 0.5 Numbering) into its own explicit track so frontend
+work can be staffed and issued independently of backend progress. Frontend
+tasks for Epics 0.6–0.10 follow the same pattern once those backend epics
+land. Epic F0.11 (Admin Portal UI) is included here too since its backend
 companion, Epic 0.11, was added as a gap-review addendum rather than
-waiting in sequence behind 0.5–0.10.
+waiting in sequence behind 0.6–0.10.
 
 ### Epic F0.0 — Frontend App Shell & Bootstrap
 
@@ -293,6 +293,19 @@ Companion to Epic 0.4.
 | F0.4.4 | Approve/reject action screen with mandatory comment on rejection | WF-6 | M |
 | F0.4.5 | Delegation setup (date range) and escalation status indicator | WF-5 | M |
 | F0.4.6 | Approval history timeline component embedded on document detail views (shares groundwork with F0.3.1) | WF-7 | M |
+
+### Epic F0.5 — Numbering UI
+
+Frontend companion to Epic 0.5 (`PLAT-NUM`), cut once the backend epic
+landed (per the "not yet broken out" note this section used to carry).
+Depends on Epic F0.0 (app shell) and Epic F0.2 (auth/permission patterns).
+
+| Task | Description | SRS Ref | Size |
+|---|---|---|---|
+| F0.5.1 | Naming-series configuration screen: prefix/date-part template editor, counter width, per doc type per company | NUM-1 | M |
+| F0.5.2 | Live preview of the next formatted document number as the template is edited | NUM-1 | S |
+| F0.5.3 | Fiscal-year reset policy control (never / annual + fiscal-year-start-month) on the series form | NUM-3 | S |
+| F0.5.4 | Series list view with activate/deactivate lifecycle actions | NUM-1 | S |
 
 ### Epic F0.11 — Admin Portal UI
 
