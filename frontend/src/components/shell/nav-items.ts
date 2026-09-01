@@ -11,6 +11,9 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/" },
+  // F0.4.3: cross-module — approval tasks can belong to any document type,
+  // so this sits alongside Dashboard rather than under one business module.
+  { label: "Approvals", href: "/approvals" },
   { label: "Finance" },
   { label: "Inventory" },
   { label: "Procurement" },
@@ -25,6 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "SoD Rules", href: "/admin/sod-rules" },
   { label: "Audit Log", href: "/admin/audit-log" },
   { label: "Setup Checklist", href: "/admin/setup-checklist" },
+  { label: "Approval Chains", href: "/admin/workflow-chains" },
   // F0.11.1/F0.11.4: platform- and brand-admin consoles are a separate
   // operator persona from the tenant-scoped items above (ADM-1/ADM-5 design
   // note) — same flat, unfiltered nav pattern as the rest of this list until
