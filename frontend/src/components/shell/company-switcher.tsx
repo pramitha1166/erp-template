@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Building2, Check } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { listUserRoles } from "@/lib/api/iam-api";
+import { listCompanies } from "@/lib/api/masterdata-company-api";
 import { useSessionStore } from "@/stores/session-store";
 import { type CompanyOption, useTenantStore } from "@/stores/tenant-store";
 import { Button } from "@/components/ui/button";
@@ -55,18 +56,31 @@ function CompanyRow({ company, userId, isActive, onSelect }: CompanyRowProps) {
 /**
  * F0.2.6 / IAM-4: a user can hold different roles in different companies of
  * the same tenant, so the active company is switchable rather than fixed at
- * login (see `tenant-store.ts`). `availableCompanies` has no backing
- * endpoint yet — company/branch masters are Epic 0.9+ (the same gap
- * `UserController` documents for user provisioning) — so this switches
- * among whatever the eventual company-picker populates the store with, and
- * says so plainly when that list is still empty.
+ * login (see `tenant-store.ts`). `availableCompanies` is populated by
+ * `CompanyPanel` (F0.6.1, `GET /masterdata/companies`) whenever the
+ * Companies admin screen has been visited this session; until then — e.g.
+ * right after login — this says so plainly when the list is still empty
+ * rather than showing a confusing blank dialog.
  */
 export function CompanySwitcher() {
   const [open, setOpen] = useState(false);
   const availableCompanies = useTenantStore((state) => state.availableCompanies);
   const activeCompany = useTenantStore((state) => state.activeCompany);
   const setActiveCompany = useTenantStore((state) => state.setActiveCompany);
+  const setAvailableCompanies = useTenantStore((state) => state.setAvailableCompanies);
   const userId = useSessionStore((state) => state.user?.id ?? "");
+
+  const { data: companies } = useQuery({
+    queryKey: ["masterdata", "companies"],
+    queryFn: listCompanies,
+    staleTime: 30_000,
+  });
+
+  useEffect(() => {
+    if (companies) {
+      setAvailableCompanies(companies.map((company) => ({ id: company.id, name: company.legalName })));
+    }
+  }, [companies, setAvailableCompanies]);
 
   return (
     <>

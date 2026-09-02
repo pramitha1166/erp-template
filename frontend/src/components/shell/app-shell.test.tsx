@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -10,9 +11,19 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), forward: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }),
 }));
 
+// F0.6.1: the company switcher (in the header) fetches the tenant's company list to populate itself.
+vi.mock("@/lib/api/masterdata-company-api", () => ({
+  listCompanies: vi.fn().mockResolvedValue([]),
+}));
+
+function renderWithClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
+
 describe("AppShell", () => {
   it("renders the header and the primary nav", () => {
-    render(
+    renderWithClient(
       <AppShell>
         <p>page content</p>
       </AppShell>,
@@ -25,7 +36,7 @@ describe("AppShell", () => {
 
   it("toggles the mobile nav open state when the menu button is clicked", async () => {
     const user = userEvent.setup();
-    render(
+    renderWithClient(
       <AppShell>
         <p>page content</p>
       </AppShell>,

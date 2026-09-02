@@ -21,26 +21,23 @@ snapshot to orient a new session quickly, not authoritative. Re-check issue
 state before assuming anything below is still accurate.
 
 **Backend Epics — done (merged):** 0.0 Bootstrap (#1), 0.1 Document Model
-(#2), 0.2 IAM (#3), 0.3 Audit Trail (#4), 0.11 Tenant Onboarding &
+(#2), 0.2 IAM (#3), 0.3 Audit Trail (#4), 0.4 Workflow Engine (#5), 0.5
+Numbering (#6), 0.6 Master Data / `PLAT-MDM` (#7), 0.11 Tenant Onboarding &
 Administration / `PLAT-ADMIN` (#31, plus sub-task 0.11.10 platform/brand-
 admin auth + bootstrap rotation, #35).
 
-**Backend Epics — open:** 0.4 Workflow Engine (#5), 0.5 Numbering (#6),
-0.6 Master Data (#7), 0.7 Documents & Attachments (#8), 0.8 Branding &
+**Backend Epics — open:** 0.7 Documents & Attachments (#8), 0.8 Branding &
 White-Label (#9), 0.9 Branch & Org Dimensions (#10), 0.10 Reporting
 Framework (#11).
 
 **Frontend Epics — done (merged):** F0.0 App Shell & Bootstrap (#21),
 F0.1 Document Lifecycle UI Primitives (#22), F0.2 Auth & Access UI (#23),
-F0.11 Admin Portal UI (#32).
+F0.3 Audit Trail UI (#24), F0.4 Workflow & Approvals UI (#25), F0.5
+Numbering UI (#41), F0.11 Admin Portal UI (#32).
 
-**Frontend Epics — open / verify:** F0.3 Audit Trail UI (#24 — code
-already merged via a prior commit; issue may just need closing rather than
-more work, confirm before starting), F0.4 Workflow & Approvals UI (#25),
-F0.11.7 separate admin login UI (#36, a sub-task split out during F0.11
-implementation), F0.5 Numbering UI (#41, cut once Epic 0.5's backend
-landed — see `docs/TASK-BREAKDOWN.md`), F0.6 Master Data UI (#44, cut
-alongside Epic 0.6's backend implementation — see below).
+**Frontend Epics — open / verify:** F0.11.7 separate admin login UI (#36,
+a sub-task split out during F0.11 implementation), F0.6 Master Data UI
+(#44 — implementation in progress, see below).
 
 **Addendum:** `PLAT-ADMIN` (SRS §3.10, `ADM-1`..`ADM-9`) was added after a
 gap review found no requirement for who provisions a `Brand` or how a
