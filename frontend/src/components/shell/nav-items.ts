@@ -21,7 +21,16 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Payroll" },
   { label: "Statutory" },
   { label: "Banking" },
-  { label: "Master Data" },
+  // F0.6: Master Data's own admin screens, same flat pattern as the IAM/
+  // workflow config screens below rather than a second nav surface.
+  { label: "Companies", href: "/admin/companies" },
+  { label: "Chart of Accounts", href: "/admin/chart-of-accounts" },
+  { label: "Cost Centres", href: "/admin/cost-centres" },
+  { label: "Customers & Suppliers", href: "/admin/business-partners" },
+  { label: "Items", href: "/admin/items" },
+  { label: "Units of Measure", href: "/admin/units-of-measure" },
+  { label: "Currencies", href: "/admin/currencies" },
+  { label: "Fiscal Years", href: "/admin/fiscal-years" },
   // IAM isn't a business module, but F0.2.5/F0.2.7 land its admin screens
   // here rather than inventing a second nav surface just for them.
   { label: "Roles & Permissions", href: "/admin/roles" },
