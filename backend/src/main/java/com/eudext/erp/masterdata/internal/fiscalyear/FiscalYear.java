@@ -83,4 +83,8 @@ public class FiscalYear {
     public void close() {
         this.status = FiscalYearStatus.CLOSED;
     }
+
+    public void reopen() {
+        this.status = FiscalYearStatus.OPEN;
+    }
 }

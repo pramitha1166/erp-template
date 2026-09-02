@@ -14,7 +14,7 @@ Spring Modulith · PostgreSQL 16 (RLS) · Next.js 15 / TypeScript.
   starting anything not obviously covered there, check whether it already
   exists as a task before inventing a new approach.
 
-## Project status (last updated 2026-09-01)
+## Project status (last updated 2026-09-02)
 
 GitHub issues are the live source of truth for what's done — this is a
 snapshot to orient a new session quickly, not authoritative. Re-check issue
@@ -22,32 +22,32 @@ state before assuming anything below is still accurate.
 
 **Backend Epics — done (merged):** 0.0 Bootstrap (#1), 0.1 Document Model
 (#2), 0.2 IAM (#3), 0.3 Audit Trail (#4), 0.4 Workflow Engine / `PLAT-WF`
-(#5, PR #39), 0.11 Tenant Onboarding & Administration / `PLAT-ADMIN` (#31,
-plus sub-task 0.11.10 platform/brand-admin auth + bootstrap rotation, #35).
+(#5, PR #39), 0.5 Numbering / `PLAT-NUM` (#6, PR #42), 0.6 Master Data /
+`PLAT-MDM` (#7, PR #45), 0.11 Tenant Onboarding & Administration /
+`PLAT-ADMIN` (#31, plus sub-task 0.11.10 platform/brand-admin auth +
+bootstrap rotation, #35).
 
-**0.4 caveat:** the merging session could not run `mvn verify`'s
-Testcontainers IT (`WorkflowEngineIT`) — sandbox egress blocked the Docker
-Hub pull — so it compiled clean and unit-tested clean but the integration
-test has not actually been confirmed green by anyone yet. Run `mvn verify`
-against it before building further on top (F0.4, or any document-owning
-module wiring in via `WorkflowApi`).
+**0.4 caveat (still open as of this update):** the session that merged
+Epic 0.4 could not run `mvn verify`'s Testcontainers IT (`WorkflowEngineIT`)
+— sandbox egress blocked the Docker Hub pull — so it compiled clean and
+unit-tested clean but the integration test has not been confirmed green by
+anyone yet, including the 0.5/0.6/F0.4/F0.5/F0.6 work that has since landed
+on top of it. Run `mvn verify` before trusting `WorkflowApi` further.
 
-**Backend Epics — open:** 0.5 Numbering (#6), 0.6 Master Data (#7),
-0.7 Documents & Attachments (#8), 0.8 Branding & White-Label (#9),
-0.9 Branch & Org Dimensions (#10), 0.10 Reporting Framework (#11).
+**Backend Epics — open:** 0.7 Documents & Attachments (#8), 0.8 Branding &
+White-Label (#9), 0.9 Branch & Org Dimensions (#10), 0.10 Reporting
+Framework (#11).
 
 **Frontend Epics — done (merged):** F0.0 App Shell & Bootstrap (#21),
 F0.1 Document Lifecycle UI Primitives (#22), F0.2 Auth & Access UI (#23),
 F0.3 Audit Trail UI (#24 — code had already merged via a prior commit;
-closed 2026-09-01 with no further work needed), F0.11 Admin Portal UI
-(#32).
+closed 2026-09-01 with no further work needed), F0.4 Workflow & Approvals
+UI (#25, PR #40), F0.5 Numbering UI (#41, PR #43), F0.6 Master Data UI
+(#44, PR #46), F0.11 Admin Portal UI (#32), F0.11.7 separate admin login
+UI (#36, PR #47, a sub-task split out during F0.11 implementation).
 
-**Frontend Epics — open:** F0.4 Workflow & Approvals UI (#25 — now
-unblocked, backend 0.4 merged; REST surface exists for all of it:
-`ApprovalChainController`, `ApprovalTaskController`, `ApprovalDelegation
-Controller`, `ApprovalHistoryController` — see 0.4 caveat above before
-starting), F0.11.7 separate admin login UI (#36, a sub-task split out
-during F0.11 implementation).
+**Frontend Epics — open:** none currently. Every Phase 0 backend epic
+merged so far (0.0–0.6, 0.11) has its frontend companion merged too.
 
 **Addendum:** `PLAT-ADMIN` (SRS §3.10, `ADM-1`..`ADM-9`) was added after a
 gap review found no requirement for who provisions a `Brand` or how a
@@ -57,9 +57,13 @@ Console, tenant onboarding with default-data seeding, suspension/
 reactivation, audited impersonation, and PDPA export/erasure handling.
 See Epic 0.11 / F0.11 in `docs/TASK-BREAKDOWN.md`.
 
-**Not yet broken out:** frontend companions for Epics 0.5–0.10 (i.e.
-F0.5–F0.10) don't exist yet in `docs/TASK-BREAKDOWN.md` or as issues — cut
-them once each backend epic lands, following the F0.0–F0.4/F0.11 pattern.
+**Not yet broken out:** frontend companions for Epics 0.7–0.10 (i.e.
+F0.7–F0.10) don't exist yet in `docs/TASK-BREAKDOWN.md` or as issues — cut
+them once each backend epic lands, following the F0.0–F0.6/F0.11 pattern.
+(F0.5 Numbering UI was cut when Epic 0.5's backend landed; F0.6 Master
+Data UI (#44) was cut alongside Epic 0.6's backend implementation, ahead
+of that PR merging, since the task breakdown was already fully known —
+see below.)
 
 When an Epic's PR merges, update its line above and close the matching
 GitHub issue if it isn't already closed — don't let this section go stale.

@@ -232,17 +232,17 @@ hours) and should be verified against it explicitly.
 
 ---
 
-## Frontend Track — Phase 0 (Epics 0.0–0.4)
+## Frontend Track — Phase 0 (Epics 0.0–0.6)
 
 The original breakdown wove UI work into whichever backend epic owned the
-feature. This section pulls the frontend slice for the five Phase 0 epics
+feature. This section pulls the frontend slice for the Phase 0 epics
 completed so far (0.0 Bootstrap, 0.1 Document Model, 0.2 IAM, 0.3 Audit,
-0.4 Workflow Engine) into its own explicit track so frontend work can be
-staffed and issued independently of backend progress. Frontend tasks for
-Epics 0.5–0.10 follow the same pattern once those backend epics land.
-Epic F0.11 (Admin Portal UI) is included here too since its backend
-companion, Epic 0.11, was added as a gap-review addendum rather than
-waiting in sequence behind 0.5–0.10.
+0.4 Workflow Engine, 0.5 Numbering, 0.6 Master Data) into its own explicit
+track so frontend work can be staffed and issued independently of backend
+progress. Frontend tasks for Epics 0.7–0.10 follow the same pattern once
+those backend epics land. Epic F0.11 (Admin Portal UI) is included here
+too since its backend companion, Epic 0.11, was added as a gap-review
+addendum rather than waiting in sequence behind 0.7–0.10.
 
 ### Epic F0.0 — Frontend App Shell & Bootstrap
 
@@ -299,13 +299,12 @@ Companion to Epic 0.3.
 
 ### Epic F0.4 — Workflow & Approvals UI
 
-Companion to Epic 0.4. **Unblocked as of 2026-09-01** — backend 0.4 is
-merged (#5, PR #39) with a REST surface for all of it
-(`ApprovalChainController`, `ApprovalTaskController`,
-`ApprovalDelegationController`, `ApprovalHistoryController`); see the
-delivery note under Epic 0.4 above, including the caveat that
-`WorkflowEngineIT` still needs to be confirmed green before this epic
-leans on it.
+Companion to Epic 0.4. **Delivered (#25, PR #40),** against the REST
+surface backend 0.4 exposes (`ApprovalChainController`,
+`ApprovalTaskController`, `ApprovalDelegationController`,
+`ApprovalHistoryController`) — see the delivery note under Epic 0.4
+above, including the still-open caveat that `WorkflowEngineIT` has not
+been confirmed green.
 
 | Task | Description | SRS Ref | Size |
 |---|---|---|---|
@@ -315,6 +314,37 @@ leans on it.
 | F0.4.4 | Approve/reject action screen with mandatory comment on rejection | WF-6 | M |
 | F0.4.5 | Delegation setup (date range) and escalation status indicator | WF-5 | M |
 | F0.4.6 | Approval history timeline component embedded on document detail views (shares groundwork with F0.3.1) | WF-7 | M |
+
+### Epic F0.5 — Numbering UI
+
+Frontend companion to Epic 0.5 (`PLAT-NUM`), cut once the backend epic
+landed (per the "not yet broken out" note this section used to carry).
+Depends on Epic F0.0 (app shell) and Epic F0.2 (auth/permission patterns).
+
+| Task | Description | SRS Ref | Size |
+|---|---|---|---|
+| F0.5.1 | Naming-series configuration screen: prefix/date-part template editor, counter width, per doc type per company | NUM-1 | M |
+| F0.5.2 | Live preview of the next formatted document number as the template is edited | NUM-1 | S |
+| F0.5.3 | Fiscal-year reset policy control (never / annual + fiscal-year-start-month) on the series form | NUM-3 | S |
+| F0.5.4 | Series list view with activate/deactivate lifecycle actions | NUM-1 | S |
+
+### Epic F0.6 — Master Data UI
+
+Frontend companion to Epic 0.6 (`PLAT-MDM`), cut once the backend epic
+landed (per the "not yet broken out" note this section used to carry).
+Depends on Epic F0.0 (app shell) and Epic F0.2 (auth/permission patterns).
+
+| Task | Description | SRS Ref | Size |
+|---|---|---|---|
+| F0.6.1 | Company management screen: list/switch companies within the tenant, create-another-company form, edit legal name/address/logo | MDM-1, MDM-2 | M |
+| F0.6.2 | Chart of Accounts tree view/editor: create/rename nodes, group-vs-ledger toggle, activate/deactivate | MDM-3 | L |
+| F0.6.3 | Cost Centre hierarchical tree management screen | MDM-4 | M |
+| F0.6.4 | Customer/Supplier master list + detail form: contacts, credit terms, default account, bank details | MDM-5 | L |
+| F0.6.5 | Item master list + detail form: item group, stock/purchase UOM, valuation method, batch/serial flags, tax category, HS code | MDM-6 | L |
+| F0.6.6 | UOM management screen + conversion-factor editor | MDM-7 | S |
+| F0.6.7 | Currency management screen + exchange-rate entry/history view | MDM-8 | M |
+| F0.6.8 | Fiscal Year / Accounting Period administration: close/reopen actions with the open-period guard surfaced inline | MDM-9 | S |
+| F0.6.9 | Consistent disable/enable (soft-delete) affordance across every master list screen — no delete action anywhere | MDM-10 | S |
 
 ### Epic F0.11 — Admin Portal UI
 

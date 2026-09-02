@@ -80,6 +80,14 @@ export function SessionMenu() {
           >
             Change password
           </Link>
+          <Link
+            role="menuitem"
+            href="/account/delegations"
+            className="block rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+            onClick={() => setOpen(false)}
+          >
+            Approval delegation
+          </Link>
           <button
             type="button"
             role="menuitem"
