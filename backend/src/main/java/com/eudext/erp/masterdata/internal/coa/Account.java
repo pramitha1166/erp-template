@@ -107,4 +107,17 @@ public class Account {
     public boolean isActive() {
         return active;
     }
+
+    public void rename(String name) {
+        this.name = name;
+    }
+
+    /** MDM-10: soft-delete only — an Account is never hard-deleted once it may be referenced. */
+    public void deactivate() {
+        this.active = false;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
 }

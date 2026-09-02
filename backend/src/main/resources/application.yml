@@ -76,3 +76,11 @@ eudext:
       secret-key: ${AUDIT_ARCHIVE_S3_SECRET_KEY:}
       retention-before-archive: P2Y
       tenant-ids: []
+  masterdata:
+    currency:
+      cbsl-import:
+        # MDM-8: off by default — no environment has a real CbslRateSource
+        # bean wired yet (see CbslRateSource's javadoc), so the bundled
+        # no-op source would make this a no-op regardless.
+        enabled: false
+        tenant-ids: []

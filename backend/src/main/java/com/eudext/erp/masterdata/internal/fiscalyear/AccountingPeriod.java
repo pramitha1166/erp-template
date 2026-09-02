@@ -81,7 +81,19 @@ public class AccountingPeriod {
         return endDate;
     }
 
+    public UUID getFiscalYearId() {
+        return fiscalYearId;
+    }
+
     public FiscalYearStatus getStatus() {
         return status;
+    }
+
+    public void close() {
+        this.status = FiscalYearStatus.CLOSED;
+    }
+
+    public void reopen() {
+        this.status = FiscalYearStatus.OPEN;
     }
 }

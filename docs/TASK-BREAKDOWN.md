@@ -307,6 +307,24 @@ Depends on Epic F0.0 (app shell) and Epic F0.2 (auth/permission patterns).
 | F0.5.3 | Fiscal-year reset policy control (never / annual + fiscal-year-start-month) on the series form | NUM-3 | S |
 | F0.5.4 | Series list view with activate/deactivate lifecycle actions | NUM-1 | S |
 
+### Epic F0.6 — Master Data UI
+
+Frontend companion to Epic 0.6 (`PLAT-MDM`), cut once the backend epic
+landed (per the "not yet broken out" note this section used to carry).
+Depends on Epic F0.0 (app shell) and Epic F0.2 (auth/permission patterns).
+
+| Task | Description | SRS Ref | Size |
+|---|---|---|---|
+| F0.6.1 | Company management screen: list/switch companies within the tenant, create-another-company form, edit legal name/address/logo | MDM-1, MDM-2 | M |
+| F0.6.2 | Chart of Accounts tree view/editor: create/rename nodes, group-vs-ledger toggle, activate/deactivate | MDM-3 | L |
+| F0.6.3 | Cost Centre hierarchical tree management screen | MDM-4 | M |
+| F0.6.4 | Customer/Supplier master list + detail form: contacts, credit terms, default account, bank details | MDM-5 | L |
+| F0.6.5 | Item master list + detail form: item group, stock/purchase UOM, valuation method, batch/serial flags, tax category, HS code | MDM-6 | L |
+| F0.6.6 | UOM management screen + conversion-factor editor | MDM-7 | S |
+| F0.6.7 | Currency management screen + exchange-rate entry/history view | MDM-8 | M |
+| F0.6.8 | Fiscal Year / Accounting Period administration: close/reopen actions with the open-period guard surfaced inline | MDM-9 | S |
+| F0.6.9 | Consistent disable/enable (soft-delete) affordance across every master list screen — no delete action anywhere | MDM-10 | S |
+
 ### Epic F0.11 — Admin Portal UI
 
 Frontend companion to Epic 0.11 (`PLAT-ADMIN`). Depends on Epic F0.0 (app

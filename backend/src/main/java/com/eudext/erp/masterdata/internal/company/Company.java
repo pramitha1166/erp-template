@@ -115,6 +115,18 @@ public class Company {
         return legalName;
     }
 
+    public String getRegistrationNo() {
+        return registrationNo;
+    }
+
+    public String getVatNo() {
+        return vatNo;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
     public String getBaseCurrency() {
         return baseCurrency;
     }
@@ -123,8 +135,19 @@ public class Company {
         return fiscalYearStartMonth;
     }
 
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
     public boolean isDisabled() {
         return disabled;
+    }
+
+    /** MDM-1: the fields an already-onboarded company may amend. Registration/VAT no. and base currency are fixed. */
+    public void update(String legalName, String address, String logoUrl) {
+        this.legalName = legalName;
+        this.address = address;
+        this.logoUrl = logoUrl;
     }
 
     /** MDM-10: soft-delete only — a Company is never hard-deleted once it may be referenced. */
