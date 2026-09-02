@@ -29,6 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Audit Log", href: "/admin/audit-log" },
   { label: "Setup Checklist", href: "/admin/setup-checklist" },
   { label: "Approval Chains", href: "/admin/workflow-chains" },
+  { label: "Naming Series", href: "/admin/numbering-series" },
   // F0.11.1/F0.11.4: platform- and brand-admin consoles are a separate
   // operator persona from the tenant-scoped items above (ADM-1/ADM-5 design
   // note) — same flat, unfiltered nav pattern as the rest of this list until
