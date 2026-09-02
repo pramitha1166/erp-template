@@ -33,11 +33,11 @@ Framework (#11).
 **Frontend Epics — done (merged):** F0.0 App Shell & Bootstrap (#21),
 F0.1 Document Lifecycle UI Primitives (#22), F0.2 Auth & Access UI (#23),
 F0.3 Audit Trail UI (#24), F0.4 Workflow & Approvals UI (#25), F0.5
-Numbering UI (#41), F0.11 Admin Portal UI (#32).
+Numbering UI (#41), F0.11 Admin Portal UI (#32), F0.11.7 separate admin
+login UI (#36, a sub-task split out during F0.11 implementation).
 
-**Frontend Epics — open / verify:** F0.11.7 separate admin login UI (#36,
-a sub-task split out during F0.11 implementation), F0.6 Master Data UI
-(#44 — implementation in progress, see below).
+**Frontend Epics — open / verify:** F0.6 Master Data UI (#44 —
+implementation in progress, see below).
 
 **Addendum:** `PLAT-ADMIN` (SRS §3.10, `ADM-1`..`ADM-9`) was added after a
 gap review found no requirement for who provisions a `Brand` or how a
