@@ -81,6 +81,22 @@ requirement ID of its own, so it's called out explicitly as Epic 0.0 below.
 | 0.4.7 | Approval history panel (timestamps, comments) on documents | WF-7 | S |
 | 0.4.8 | Email + in-app notifications on pending approval | WF-8 | M |
 
+**Delivered (#5, PR #39).** Document-owning modules integrate through
+`WorkflowApi.startApproval()` called before `Document.submit()`, and only
+call `submit()` once the instance reaches `APPROVED` — `Document` has no
+`SUBMITTED → DRAFT` transition (ARCH-4), so WF-6 (rejection returns the
+document to draft) is satisfied by never leaving `DRAFT` in the first
+place rather than by reversing a submission. `iam` gained a small,
+additive surface for this: a `manager_id` column on users plus
+`ApproverDirectoryApi` for role-membership and reporting-hierarchy lookups
+— `workflow` never reaches into `iam` internals (ARCH-1). Unit coverage
+for condition evaluation, delegation date-range logic, and approver
+resolution, plus `WorkflowEngineIT` end-to-end via Testcontainers — the
+IT could not actually be run in the authoring sandbox (Docker Hub pull
+blocked); confirm it green with `mvn verify` before relying on this in
+another module. Unblocks Epic F0.4 below and task 0.9.7 (branch-based
+approval resolution).
+
 ### Epic 0.5 — Numbering (`PLAT-NUM`)
 
 | Task | SRS Ref | Size |
@@ -216,17 +232,17 @@ hours) and should be verified against it explicitly.
 
 ---
 
-## Frontend Track — Phase 0 (Epics 0.0–0.4)
+## Frontend Track — Phase 0 (Epics 0.0–0.6)
 
 The original breakdown wove UI work into whichever backend epic owned the
 feature. This section pulls the frontend slice for the Phase 0 epics
 completed so far (0.0 Bootstrap, 0.1 Document Model, 0.2 IAM, 0.3 Audit,
-0.4 Workflow Engine, 0.5 Numbering) into its own explicit track so frontend
-work can be staffed and issued independently of backend progress. Frontend
-tasks for Epics 0.6–0.10 follow the same pattern once those backend epics
-land. Epic F0.11 (Admin Portal UI) is included here too since its backend
-companion, Epic 0.11, was added as a gap-review addendum rather than
-waiting in sequence behind 0.6–0.10.
+0.4 Workflow Engine, 0.5 Numbering, 0.6 Master Data) into its own explicit
+track so frontend work can be staffed and issued independently of backend
+progress. Frontend tasks for Epics 0.7–0.10 follow the same pattern once
+those backend epics land. Epic F0.11 (Admin Portal UI) is included here
+too since its backend companion, Epic 0.11, was added as a gap-review
+addendum rather than waiting in sequence behind 0.7–0.10.
 
 ### Epic F0.0 — Frontend App Shell & Bootstrap
 
@@ -283,7 +299,12 @@ Companion to Epic 0.3.
 
 ### Epic F0.4 — Workflow & Approvals UI
 
-Companion to Epic 0.4.
+Companion to Epic 0.4. **Delivered (#25, PR #40),** against the REST
+surface backend 0.4 exposes (`ApprovalChainController`,
+`ApprovalTaskController`, `ApprovalDelegationController`,
+`ApprovalHistoryController`) — see the delivery note under Epic 0.4
+above, including the still-open caveat that `WorkflowEngineIT` has not
+been confirmed green.
 
 | Task | Description | SRS Ref | Size |
 |---|---|---|---|

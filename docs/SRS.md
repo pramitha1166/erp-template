@@ -121,6 +121,15 @@ These underpin every module and must exist before functional work begins.
 | WF-7 | Approval history visible on document with timestamps and comments |
 | WF-8 | Email and in-app notification on pending approval |
 
+**Implementation note (added post-build, Epic 0.4/#5):** WF-6 reads as
+"rejection returns document to draft," which could be misread as a
+`SUBMITTED → DRAFT` transition — ARCH-4 defines no such transition. The
+built contract is: a document-owning module calls
+`WorkflowApi.startApproval()` before `Document.submit()`, and only calls
+`submit()` once the approval instance reaches `APPROVED`. A rejection
+therefore satisfies WF-6 by never letting the document leave `DRAFT` in
+the first place, not by reversing a submission.
+
 ### 3.4 Numbering — `PLAT-NUM`
 
 | ID | Requirement |

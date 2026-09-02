@@ -21,10 +21,18 @@ snapshot to orient a new session quickly, not authoritative. Re-check issue
 state before assuming anything below is still accurate.
 
 **Backend Epics — done (merged):** 0.0 Bootstrap (#1), 0.1 Document Model
-(#2), 0.2 IAM (#3), 0.3 Audit Trail (#4), 0.4 Workflow Engine (#5), 0.5
-Numbering (#6), 0.6 Master Data / `PLAT-MDM` (#7), 0.11 Tenant Onboarding &
-Administration / `PLAT-ADMIN` (#31, plus sub-task 0.11.10 platform/brand-
-admin auth + bootstrap rotation, #35).
+(#2), 0.2 IAM (#3), 0.3 Audit Trail (#4), 0.4 Workflow Engine / `PLAT-WF`
+(#5, PR #39), 0.5 Numbering / `PLAT-NUM` (#6, PR #42), 0.6 Master Data /
+`PLAT-MDM` (#7, PR #45), 0.11 Tenant Onboarding & Administration /
+`PLAT-ADMIN` (#31, plus sub-task 0.11.10 platform/brand-admin auth +
+bootstrap rotation, #35).
+
+**0.4 caveat (still open as of this update):** the session that merged
+Epic 0.4 could not run `mvn verify`'s Testcontainers IT (`WorkflowEngineIT`)
+— sandbox egress blocked the Docker Hub pull — so it compiled clean and
+unit-tested clean but the integration test has not been confirmed green by
+anyone yet, including the 0.5/0.6/F0.4/F0.5/F0.6 work that has since landed
+on top of it. Run `mvn verify` before trusting `WorkflowApi` further.
 
 **Backend Epics — open:** 0.7 Documents & Attachments (#8), 0.8 Branding &
 White-Label (#9), 0.9 Branch & Org Dimensions (#10), 0.10 Reporting
@@ -32,12 +40,14 @@ Framework (#11).
 
 **Frontend Epics — done (merged):** F0.0 App Shell & Bootstrap (#21),
 F0.1 Document Lifecycle UI Primitives (#22), F0.2 Auth & Access UI (#23),
-F0.3 Audit Trail UI (#24), F0.4 Workflow & Approvals UI (#25), F0.5
-Numbering UI (#41), F0.11 Admin Portal UI (#32), F0.11.7 separate admin
-login UI (#36, a sub-task split out during F0.11 implementation).
+F0.3 Audit Trail UI (#24 — code had already merged via a prior commit;
+closed 2026-09-01 with no further work needed), F0.4 Workflow & Approvals
+UI (#25, PR #40), F0.5 Numbering UI (#41, PR #43), F0.6 Master Data UI
+(#44, PR #46), F0.11 Admin Portal UI (#32), F0.11.7 separate admin login
+UI (#36, PR #47, a sub-task split out during F0.11 implementation).
 
-**Frontend Epics — open / verify:** F0.6 Master Data UI (#44 —
-implementation in progress, see below).
+**Frontend Epics — open:** none currently. Every Phase 0 backend epic
+merged so far (0.0–0.6, 0.11) has its frontend companion merged too.
 
 **Addendum:** `PLAT-ADMIN` (SRS §3.10, `ADM-1`..`ADM-9`) was added after a
 gap review found no requirement for who provisions a `Brand` or how a
