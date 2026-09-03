@@ -84,3 +84,23 @@ eudext:
         # no-op source would make this a no-op regardless.
         enabled: false
         tenant-ids: []
+  documents:
+    attachments:
+      # DOC-1: off by default — no environment needs a reachable
+      # S3-compatible endpoint just to boot. The docker profile turns this
+      # on against the local MinIO instance; staging/production override
+      # these via env vars against real S3.
+      enabled: false
+      s3-endpoint: ${DOCUMENTS_ATTACHMENTS_S3_ENDPOINT:}
+      region: ${DOCUMENTS_ATTACHMENTS_S3_REGION:us-east-1}
+      bucket: ${DOCUMENTS_ATTACHMENTS_S3_BUCKET:eudext-attachments}
+      access-key: ${DOCUMENTS_ATTACHMENTS_S3_ACCESS_KEY:}
+      secret-key: ${DOCUMENTS_ATTACHMENTS_S3_SECRET_KEY:}
+      virus-scan:
+        # DOC-4: off by default — no environment needs a reachable ClamAV
+        # daemon just to boot. The docker profile turns this on against the
+        # local ClamAV instance; staging/production override these via env
+        # vars against a reachable ClamAV endpoint.
+        enabled: false
+        host: ${DOCUMENTS_ATTACHMENTS_CLAMAV_HOST:localhost}
+        port: ${DOCUMENTS_ATTACHMENTS_CLAMAV_PORT:3310}

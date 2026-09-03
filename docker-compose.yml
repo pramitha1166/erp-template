@@ -44,6 +44,22 @@ services:
       timeout: 5s
       retries: 10
 
+  clamav:
+    # DOC-4: virus scanning on attachment upload. First boot downloads the
+    # signature database, which can take a couple of minutes — the generous
+    # healthcheck start_period below accounts for that.
+    image: clamav/clamav:latest
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 180s
+
   backend:
     build:
       context: ./backend
@@ -55,6 +71,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      clamav:
         condition: service_healthy
 
   frontend:
@@ -70,3 +88,4 @@ services:
 volumes:
   postgres_data:
   minio_data:
+  clamav_data:
