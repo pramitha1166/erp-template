@@ -325,6 +325,22 @@ Depends on Epic F0.0 (app shell) and Epic F0.2 (auth/permission patterns).
 | F0.6.8 | Fiscal Year / Accounting Period administration: close/reopen actions with the open-period guard surfaced inline | MDM-9 | S |
 | F0.6.9 | Consistent disable/enable (soft-delete) affordance across every master list screen — no delete action anywhere | MDM-10 | S |
 
+### Epic F0.7 — Documents & Attachments UI
+
+Frontend companion to Epic 0.7 (`PLAT-DOC`), cut alongside the backend
+epic's implementation (per the "not yet broken out" note this section
+used to carry). Depends on Epic F0.0 (app shell) and Epic F0.2
+(auth/permission patterns).
+
+| Task | Description | SRS Ref | Size |
+|---|---|---|---|
+| F0.7.1 | Generic attachment panel (drag-and-drop upload, list with file-type icons, download, delete) — reusable on any document detail view | DOC-1 | M |
+| F0.7.2 | Print-format template editor: code/XHTML view for the per-document-type template with a live PDF preview pane | DOC-2 | L |
+| F0.7.3 | Print-format administration screen: create, rename, set default, activate/deactivate per document type | DOC-2 | S |
+| F0.7.4 | "Print" / "Download PDF" action on document detail views, rendering the document's default print format | DOC-3 | S |
+| F0.7.5 | Upload virus-scan status indicator (pending/clean/infected) surfaced inline on the attachment panel | DOC-4 | S |
+| F0.7.6 | Attachment/print-format actions respect the parent document's own view/manage permissions (no separate documents-module permission in the UI) | DOC-5 | S |
+
 ### Epic F0.11 — Admin Portal UI
 
 Frontend companion to Epic 0.11 (`PLAT-ADMIN`). Depends on Epic F0.0 (app

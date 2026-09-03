@@ -27,6 +27,8 @@
     <jjwt.version>0.12.6</jjwt.version>
     <aws-sdk.version>2.29.52</aws-sdk.version>
     <bouncycastle.version>1.78.1</bouncycastle.version>
+    <flying-saucer.version>9.4.0</flying-saucer.version>
+    <clamav-client.version>2.1.2</clamav-client.version>
   </properties>
 
   <dependencyManagement>
@@ -162,6 +164,29 @@
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>s3</artifactId>
+    </dependency>
+
+    <!-- DOC-2/DOC-3: print-format templates are Thymeleaf XHTML merged with
+         document data, then rendered to a deterministic PDF server-side by
+         Flying Saucer (uses OpenPDF transitively) — no browser/client
+         renderer involved, so output doesn't vary by client. -->
+    <dependency>
+      <groupId>org.thymeleaf</groupId>
+      <artifactId>thymeleaf</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.xhtmlrenderer</groupId>
+      <artifactId>flying-saucer-pdf</artifactId>
+      <version>${flying-saucer.version}</version>
+    </dependency>
+
+    <!-- DOC-4: virus scanning on upload against a ClamAV daemon (the
+         docker-compose `clamav` service locally; a reachable ClamAV
+         endpoint in staging/production). -->
+    <dependency>
+      <groupId>xyz.capybara</groupId>
+      <artifactId>clamav-client</artifactId>
+      <version>${clamav-client.version}</version>
     </dependency>
 
     <!-- DTO mapping -->
