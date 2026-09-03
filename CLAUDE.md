@@ -14,7 +14,7 @@ Spring Modulith · PostgreSQL 16 (RLS) · Next.js 15 / TypeScript.
   starting anything not obviously covered there, check whether it already
   exists as a task before inventing a new approach.
 
-## Project status (last updated 2026-09-02)
+## Project status (last updated 2026-09-03)
 
 GitHub issues are the live source of truth for what's done — this is a
 snapshot to orient a new session quickly, not authoritative. Re-check issue
@@ -37,7 +37,8 @@ Numbering UI (#41), F0.11 Admin Portal UI (#32), F0.11.7 separate admin
 login UI (#36, a sub-task split out during F0.11 implementation).
 
 **Frontend Epics — open / verify:** F0.6 Master Data UI (#44 —
-implementation in progress, see below).
+implementation in progress, see below), F0.7 Documents & Attachments UI
+(#49, cut alongside Epic 0.7's backend implementation — see below).
 
 **Addendum:** `PLAT-ADMIN` (SRS §3.10, `ADM-1`..`ADM-9`) was added after a
 gap review found no requirement for who provisions a `Brand` or how a
@@ -47,13 +48,14 @@ Console, tenant onboarding with default-data seeding, suspension/
 reactivation, audited impersonation, and PDPA export/erasure handling.
 See Epic 0.11 / F0.11 in `docs/TASK-BREAKDOWN.md`.
 
-**Not yet broken out:** frontend companions for Epics 0.7–0.10 (i.e.
-F0.7–F0.10) don't exist yet in `docs/TASK-BREAKDOWN.md` or as issues — cut
-them once each backend epic lands, following the F0.0–F0.6/F0.11 pattern.
+**Not yet broken out:** frontend companions for Epics 0.8–0.10 (i.e.
+F0.8–F0.10) don't exist yet in `docs/TASK-BREAKDOWN.md` or as issues — cut
+them once each backend epic lands, following the F0.0–F0.7/F0.11 pattern.
 (F0.5 Numbering UI was cut when Epic 0.5's backend landed; F0.6 Master
 Data UI (#44) was cut alongside Epic 0.6's backend implementation, ahead
-of that PR merging, since the task breakdown was already fully known —
-see below.)
+of that PR merging, since the task breakdown was already fully known;
+F0.7 Documents & Attachments UI (#49) was cut the same way alongside
+Epic 0.7's backend implementation — see below.)
 
 When an Epic's PR merges, update its line above and close the matching
 GitHub issue if it isn't already closed — don't let this section go stale.
