@@ -39,6 +39,8 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Setup Checklist", href: "/admin/setup-checklist" },
   { label: "Approval Chains", href: "/admin/workflow-chains" },
   { label: "Naming Series", href: "/admin/numbering-series" },
+  // F0.7: Documents & Attachments' own admin screen, same flat pattern.
+  { label: "Print Formats", href: "/admin/print-formats" },
   // F0.11.1/F0.11.4: platform- and brand-admin consoles are a separate
   // operator persona from the tenant-scoped items above (ADM-1/ADM-5 design
   // note) — same flat, unfiltered nav pattern as the rest of this list until

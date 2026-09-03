@@ -6,9 +6,15 @@ import {
   setRefreshToken,
 } from "./tokens";
 
-const baseUrl = (
+export const baseUrl = (
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api"
 ).replace(/\/$/, "");
+
+/** Same bearer-token rule `apiFetch` applies, exposed for callers that build their own `fetch` calls. */
+export function authHeaders(): Record<string, string> {
+  const token = getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 /** Shape of `ApiError` from `IamExceptionHandler` (and every other module's error advice). */
 export class ApiError extends Error {
@@ -82,7 +88,14 @@ function buildUrl(path: string, query?: Record<string, string | undefined>): str
   return url.toString();
 }
 
-async function parseError(response: Response): Promise<ApiError> {
+/**
+ * Exported for the handful of endpoints `apiFetch` can't serve directly —
+ * multipart upload request bodies and binary (PDF) response bodies — so
+ * they can still turn a non-OK response into the same {@link ApiError}
+ * shape instead of each hand-rolling its own parsing (see
+ * `documents-attachment-api.ts` / `documents-printformat-api.ts`).
+ */
+export async function parseError(response: Response): Promise<ApiError> {
   try {
     const data = (await response.json()) as { message?: string; details?: string[] };
     return new ApiError(response.status, data.message ?? response.statusText, data.details ?? []);
